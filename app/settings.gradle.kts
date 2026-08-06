@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FengShuiApp"
 include(":app")
+include(":solver")
