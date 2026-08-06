@@ -1,0 +1,25 @@
+# Gradle / Android
+app/.gradle/
+app/**/build/
+app/build/
+app/app/build/
+app/local.properties
+app/.idea/
+app/captures/
+app/.externalNativeBuild/
+app/.cxx/
+*.iml
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
+.idea/
+
+# 日志/临时
+*.log
+/tmp/
+
+# 凭据（绝不入库）
+*.key
+*.pem
+.git-credentials

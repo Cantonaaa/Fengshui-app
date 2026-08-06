@@ -1,0 +1,403 @@
+[
+  {
+    "ruleId": "zfj_bed_01",
+    "title": "安床宜择吉方吉间",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "bed",
+    "status": "active",
+    "condition": { "require": { "bed": 1, "direction": 1 } },
+    "finding": {
+      "summary": "安床应择宅之吉方、吉间，房门亦宜得生旺之气，床的坐位与房门相合则吉。",
+      "remedy": ["床宜安于宅之吉星方位（生气/延年/天乙/伏位）", "床位与房门方位宜相合相生"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·安床", "quoteKey": "zfj_bed_01", "original": "安床，宜擇宅之吉方吉間，房門，又宜得間星之生旺，合床之生位", "modern": "安床宜选宅的吉方吉间，房门又宜得生旺，合于床位的生位。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_bed_02",
+    "title": "床头宜枕生避煞",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "bed",
+    "status": "active",
+    "condition": { "require": { "bed": 1, "direction": 1 } },
+    "finding": {
+      "summary": "床头应枕向生旺方位、避开凶煞方位，床位分金与命卦纳音相合则吉。",
+      "remedy": ["床头朝向吉星方位", "忌头朝绝命/五鬼/六煞/祸害方位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·安床", "quoteKey": "zfj_bed_02", "original": "床頭宜枕生避煞", "modern": "床头宜枕向生旺、避开凶煞。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_bed_03",
+    "title": "安床诸忌（梁压/床后空虚/床前冲柱等）",
+    "severity": "凶",
+    "schools": ["形法", "八宅"],
+    "category": "bed",
+    "status": "active",
+    "condition": { "require": { "bed": 1 }, "spatial": { "bed": ["underBeam", "noBacking", "facingPillar", "stairAbove", "stoveInFront", "wellBehind"] } },
+    "finding": {
+      "summary": "床忌安于正梁之下（梁压）、骑梁担梁、床头床尾尽处；忌床后空虚、床后堆谷、床前冲柱、床两头不着壁、床头边开门、楼梯压床、床下暗沟、床前有灶、床后有井。",
+      "remedy": ["床避开正梁下方", "床头宜靠实墙", "床前不宜正对柱、灶、门", "楼梯下、梁下不宜安床"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·安床", "quoteKey": "zfj_bed_03", "original": "安床，忌在正梁之下，騎梁擔梁，屋頭盡處，樓頭盡處，床後空虛，床後堆谷，床前衝柱，床兩頭不著壁，床頭邊開門，外氣衝逼，樓梯壓床，床下暗溝，床前有灶，床後有井，種種皆當避", "modern": "安床忌在正梁之下、骑梁担梁、屋头尽处、床头空虚、床前冲柱、床两头不靠壁、床头边开门、楼梯压床、床下暗沟、床前有灶、床后有井等，皆当回避。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_bed_04",
+    "title": "东西四命·房宜配方位",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "bed",
+    "status": "active",
+    "condition": { "require": { "bed": 1, "direction": 1, "birth": 1 } },
+    "finding": {
+      "summary": "东四命者卧室宜在东四方，西四命者卧室宜在西四方；方位不合时当移床就吉。",
+      "remedy": ["东四命：卧房与床位宜在东、东南、南、北四方", "西四命：卧房与床位宜在西南、西北、东北、西四方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·安床", "quoteKey": "zfj_bed_04", "original": "東西命，房宜東四方，西四命，房宜西四方", "modern": "东四命者房宜在东四方，西四命者房宜在西四方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_bed_05",
+    "title": "卧房门忌对灶间",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "bed",
+    "status": "active",
+    "condition": { "require": { "bed": 1, "door": 1, "stove": 1 }, "spatial": { "door": ["facesStove"], "stove": ["nearBedroom"] } },
+    "finding": {
+      "summary": "卧房门不宜正对灶间，亦忌门对直柱、破缸等冲对，卧室门多窗多亦不吉。",
+      "remedy": ["卧房门口避开灶间", "以屏风/门帘遮挡冲对之物"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·卧房", "quoteKey": "zfj_bed_05", "original": "忌門對灶間，門對直柱，有破缸等衝對，忌房內多門窗", "modern": "忌房门对灶间，忌门对直柱、破缸等冲对，忌房内门窗过多。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_bed_06",
+    "title": "卧房忌开天窗·忌楼上作房",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "bed",
+    "status": "dormant",
+    "condition": { "require": { "bed": 1 }, "spatial": { "bed": ["hasSkylight"], "room": ["hasStoveBelow"] } },
+    "finding": {
+      "summary": "卧房忌开天窗、忌房前种芭蕉、忌楼上作卧房而楼下装仓作灶，均主不利。",
+      "remedy": ["封堵卧室天窗", "避免楼下设灶、楼上住人"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·卧房", "quoteKey": "zfj_bed_06", "original": "忌房內開天窗，忌房前種芭蕉，忌樓上作房，樓下裝倉作灶", "modern": "忌房内开天窗，忌房前种芭蕉，忌楼上作卧房而楼下装仓作灶。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_wos_01",
+    "title": "卧房宜生旺方·喜明忌暗",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "bed",
+    "status": "active",
+    "condition": { "require": { "bed": 1, "direction": 1 } },
+    "finding": {
+      "summary": "卧房宜在宅之生旺方位、本层生旺间，配合主命纳音与东西四吉；房内宜明亮，忌阴暗。",
+      "remedy": ["卧房设于宅之生旺方位", "卧室保持明亮通风，忌长期昏暗"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·卧房", "quoteKey": "zfj_wos_01", "original": "臥房，宜擇本宅生旺方，本層生旺間，並合主命納音五行，東西四吉，房內，喜明忌暗", "modern": "卧房宜择本宅生旺方、本层生旺间，并合主命纳音五行与东西四吉，房内喜明忌暗。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_zhu_01",
+    "title": "灶座压凶·灶门向吉（压煞向生）",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1, "direction": 1, "birth": 1 } },
+    "finding": {
+      "summary": "作灶以灶座压主命四凶方、灶门向主命四吉方为吉，谓之「压煞向生」。",
+      "remedy": ["灶座宜压命卦四凶方位", "灶门宜向命卦四吉方位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_zhu_01", "original": "灶座，宜壓主命四凶方，灶門，宜向主命四吉方，謂之壓煞向生", "modern": "灶座宜压主命四凶方，灶门宜向主命四吉方，称作压煞向生。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_zhu_02",
+    "title": "东四命灶座向西四方位·灶门向东四方位",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1, "direction": 1, "birth": 1 }, "match": { "mingua": "东四命" } },
+    "finding": {
+      "summary": "东四命者，灶座宜压乾坤艮兑四方，灶门宜向坎离震巽四方。",
+      "remedy": ["东四命：灶座朝西四方位，灶门朝东四方位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_zhu_02", "original": "坎離震巽為東四命，則灶座壓乾坤艮兌四方，灶門向坎離震巽四方", "modern": "坎离震巽为东四命，灶座压乾坤艮兑四方，灶门向坎离震巽四方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_zhu_03",
+    "title": "灶向忌门路冲对·忌楼上正梁",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1 }, "spatial": { "stove": ["facesDoorPath"], "underBeam": true } },
+    "finding": {
+      "summary": "灶向忌有门路冲对；作灶忌在楼上及石板砖上、忌在卧房楼下、忌正梁横压。",
+      "remedy": ["灶口避开直冲的门路", "不在梁下、楼上作灶"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_zhu_03", "original": "凡灶向，忌有門路衝對，作灶，忌在樓上及石板磚上，忌在臥房樓下，忌正梁橫壓", "modern": "凡灶向忌有门路冲对；作灶忌在楼上及石板砖上，忌在卧房楼下，忌正梁横压。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_zhu_04",
+    "title": "忌锅口对房门",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1, "door": 1 }, "spatial": { "stove": ["facesDoor"] } },
+    "finding": {
+      "summary": "灶锅口不宜正对房门，对房主孤寡不利。",
+      "remedy": ["调整灶位使锅口不冲房门"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_zhu_04", "original": "忌鍋口對房門", "modern": "忌锅口对房门。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_zhu_05",
+    "title": "灶位与床位忌相反",
+    "severity": "凶",
+    "schools": ["八宅"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1, "bed": 1 }, "spatial": { "stove": ["oppositeBed"] } },
+    "finding": {
+      "summary": "灶位与床位不可相反相对（为冲关），宜相生为吉。",
+      "remedy": ["灶与床方位宜相生", "避免灶位与床位正对相反"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "灶位与床位忌相反相对（为冲关），宜相生为吉。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ce_01",
+    "title": "作厕忌在吉方与天门文昌",
+    "severity": "凶",
+    "schools": ["八宅"],
+    "category": "toilet",
+    "status": "active",
+    "condition": { "require": { "toilet": 1, "direction": 1 }, "spatial": { "toilet": ["inBagua", "inWenChang"] } },
+    "finding": {
+      "summary": "作厕忌在宅基来脉处，及乾（天门）、巽（文昌）、四正（将星）、四墓（华盖）、关煞等方，宜安于本命休囚之位。",
+      "remedy": ["厕所避开乾/巽方位与吉星方位", "厕所宜在凶方与本命休囚之位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·坑廁", "quoteKey": "zfj_ce_01", "original": "作廁，忌在宅基來脈處、及干為天門、巽為文昌、四正為將星、四墓為華蓋、與關煞等方", "modern": "作厕忌在宅基来脉处，以及乾为天门、巽为文昌、四正为将星、四墓为华盖及关煞等方位。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ce_02",
+    "title": "厕所宜隐藏·忌当门眼见",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "toilet",
+    "status": "active",
+    "condition": { "require": { "toilet": 1, "door": 1 }, "spatial": { "toilet": ["visibleFromDoor"] } },
+    "finding": {
+      "summary": "厕所宜隐蔽，不宜当门而见（如正对大门或客厅门可见），主不吉。",
+      "remedy": ["厕所门避开大门视线", "以屏风、门帘遮挡"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·坑廁", "quoteKey": "zfj_ce_02", "original": "宜隱藏，不宜當門眼見", "modern": "（厕所）宜隐蔽，不宜当门即可看见。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ce_03",
+    "title": "厕所勿近灶近房",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "toilet",
+    "status": "active",
+    "condition": { "require": { "toilet": 1, "stove": 1 }, "spatial": { "toilet": ["nearStove"] } },
+    "finding": {
+      "summary": "厕所不宜近厨房灶位，亦不宜紧邻卧室。",
+      "remedy": ["厕所与厨房保持距离", "厕所不宜与卧室相邻"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·坑廁", "quoteKey": "zfj_ce_03", "original": "勿近灶、近房", "modern": "（厕所）勿近灶、近卧房。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_shu_01",
+    "title": "书房宜取一白四绿方（文昌）",
+    "severity": "吉",
+    "schools": ["八宅", "玄空"],
+    "category": "study",
+    "status": "active",
+    "condition": { "require": { "study": 1, "direction": 1 } },
+    "finding": {
+      "summary": "书室宜取宅之一白（官星）、四绿（文昌）方位与间数，并开一白四绿门路，主利功名。",
+      "remedy": ["书房宜设在文昌（四绿）方位", "书房开窗采光，避开晦暗"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·書室", "quoteKey": "zfj_shu_01", "original": "凡作書室，宜取宅之一白四綠方，一白四綠間，又開一白四綠門路", "modern": "凡作书室，宜取宅的一白四绿方位与间数，又开一白四绿门路。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_shu_02",
+    "title": "书房忌近灶近厕·忌四墓坤方",
+    "severity": "凶",
+    "schools": ["形法", "八宅"],
+    "category": "study",
+    "status": "active",
+    "condition": { "require": { "study": 1 }, "spatial": { "study": ["nearStove", "nearToilet"] } },
+    "finding": {
+      "summary": "书室忌蔽塞昏暗、近灶、近厕，不宜在四墓坤方。",
+      "remedy": ["书房避开厨房、厕所相邻", "书房保持明亮通风"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·書室", "quoteKey": "zfj_shu_02", "original": "忌蔽塞昏暗、近灶、近廁、不宜在四墓坤方", "modern": "忌蔽塞昏暗、近灶、近厕，不宜在四墓坤方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_shen_01",
+    "title": "神位香火忌关方煞方",
+    "severity": "凶",
+    "schools": ["八宅"],
+    "category": "shrine",
+    "status": "dormant",
+    "condition": { "require": { "shrine": 1, "direction": 1 }, "spatial": { "shrine": ["inKillSector", "besideDoor"] } },
+    "finding": {
+      "summary": "神位香火不可安在关方、煞方，及门之左右，否则主人口不利。",
+      "remedy": ["神位避开关煞方位", "神位不宜在门侧"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·神室", "quoteKey": "zfj_shen_01", "original": "神位香火，不可安在關方煞方，及門之左右，主人口不利", "modern": "神位香火不可安在关方煞方及门之左右，主人口不利。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_men_01",
+    "title": "宅内门不宜多·不宜高过壁",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "active",
+    "condition": { "require": { "door": 1 }, "spatial": { "room": ["tooManyDoors"], "door": ["higherThanWall"] } },
+    "finding": {
+      "summary": "宅内门不宜多，门不宜高过墙壁，尤忌杂乱开门，否则气散不聚。",
+      "remedy": ["减少不必要的门扇", "门高与墙协调，忌杂乱开多门"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·門戶", "quoteKey": "zfj_men_01", "original": "宅內，門不宜多，門不宜高過於壁，尤忌雜亂開門，氣散不聚", "modern": "宅内门不宜多，门不宜高过墙壁，尤忌杂乱开门，致气散不聚。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_men_02",
+    "title": "门忌相对·忌当门冲对",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "active",
+    "condition": { "require": { "door": 1 }, "spatial": { "door": ["facesAnotherDoor", "facesPillar", "threeDoorsInLine"] } },
+    "finding": {
+      "summary": "开门对柱、二门夹柱、三门相对（品字）、两胁开门、栋下开门、屋大门小、屋小门大，及门前有直屋、直路、直水、直墙、树石庙冢当门冲对者，皆忌。",
+      "remedy": ["避免门对门、门对柱", "门不宜正对直路/尖角", "门与屋的大小比例相称"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·門戶", "quoteKey": "zfj_men_02", "original": "開門對柱，二門夾柱，三門相對，式如品字，兩脅開門，棟下開門，屋大門小，屋小門大，並門前有直屋、直路、直水、直塹、直牆、直塘、直岸、樹、石、廟、塚，當門衝對，不論宅之前後，皆忌", "modern": "开门对柱、两门夹柱、三门相对如品字、两胁开门、栋下开门、屋大门小、屋小门大，以及门前有直屋、直路、直水、直墙、树石庙冢当门冲对者，不论宅之前后皆忌。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_men_03",
+    "title": "大门为全宅气口·宜端正",
+    "severity": "平",
+    "schools": ["八宅", "玄空"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "door": 1 } },
+    "finding": {
+      "summary": "大门为全宅之气口，最要端正、顺理顺势，不可轻易歪斜改移。",
+      "remedy": []
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·門戶", "quoteKey": "zfj_men_03", "original": "大門為全宅之氣口，最要端正，順理順勢", "modern": "大门是全宅的气口，最要端正，顺理顺势。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_men_04",
+    "title": "后户忌开在正中·忌专走后户",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "dormant",
+    "condition": { "require": { "door": 1 }, "spatial": { "room": ["rearDoorCentered"] } },
+    "finding": {
+      "summary": "后户只作退灰出粪之路；大忌关闭前门而专从后户出入，尤忌后户两扇开在正中，致泄宅气。",
+      "remedy": ["后门宜偏旁，不宜开在正中", "保持前门常出入"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·門戶", "quoteKey": "zfj_men_04", "original": "後戶，祗為退灰出糞之路，大忌閉前門，而專從後戶出入，尤忌後戶兩扇，開在正中", "modern": "后户只是退灰出粪之路，大忌关前门而专从后户出入，尤忌后户两扇开在正中。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_mingtang_01",
+    "title": "天井（明堂）忌积石假山积水",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "room",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["mingtangHasRocksWater"] } },
+    "finding": {
+      "summary": "明堂（天井）中忌堆石假山、筑土堆、栽花、尖射、积水、中心造小屋，忌水去对门对柱而出。",
+      "remedy": ["天井保持平整开阔", "移去假山石堆，不积水"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·明堂", "quoteKey": "zfj_mingtang_01", "original": "明堂中，忌石堆假山，忌築起土堆，忌栽花，忌尖射，忌積水，忌中心造小屋，忌水去對門對柱而出", "modern": "明堂中忌堆石假山、筑土堆、栽花、尖射、积水、中心造小屋，忌水流对门对柱而出。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_shuigou_01",
+    "title": "忌大门下出水·忌床下暗沟",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "room",
+    "status": "dormant",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["waterUnderDoor", "ditchUnderBed"] } },
+    "finding": {
+      "summary": "水沟忌斜飞八字流出、忌从大门下出、忌卧床下暗沟，均当避忌。",
+      "remedy": ["排水沟不经过大门下方", "床下不留暗沟"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·水溝", "quoteKey": "zfj_shuigou_01", "original": "至斜飛八字流出，或從大門下出，或臥床下暗溝，均忌應避", "modern": "至于斜飞八字流出，或从大门下出水，或卧床下暗沟，均当忌避。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_zonglun_01",
+    "title": "六事宜生旺方·忌关煞死退方",
+    "severity": "平",
+    "schools": ["八宅", "玄空"],
+    "category": "theory",
+    "status": "hidden",
+    "conflict": { "groupId": "stove_position", "resolveTo": "yszs_zhu_02", "hiddenRuleIds": ["zfj_zonglun_01"] },
+    "condition": { "require": { "room": 1, "direction": 1 } },
+    "finding": {
+      "summary": "宅内六事（门户、房、床、灶、井等）关系甚重，宜在本宅生旺方，忌在关煞死退方，并宜合主命纳音及东西四命吉方。",
+      "remedy": []
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·內六事總論", "quoteKey": "zfj_zonglun_01", "original": "六事之關係甚重，專從宅上，輪布九星，宜在本宅生旺方，忌在關煞死退方", "modern": "六事关系甚重，专从宅上轮布九星，宜在本宅生旺方，忌在关煞死退方。", "reliability": "直接明确" }
+    ]
+  }
+]

@@ -1,0 +1,115 @@
+# 项目交接与待办规划（ROADMAP）
+
+> 本文件供**无背景的后续会话**接手。读完本文即可继续开发，无需回溯历史对话。
+> 最后更新：2026-08-06
+
+## 1. 项目概述
+
+**产品**：Android 手机 app——拍照/录像扫描单房间生成 3D 模型 → 识别物体种类与摆放 → 结合生辰八字（命卦）与方向标注 → 用古籍蒸馏的风水规则输出**带原文依据**的指导与整改方案。
+
+**核心定位**：端上为主、全离线、隐私（生辰仅存本地并加密）。
+
+**技术栈**：Kotlin + Jetpack Compose + ARCore（方案A：平面检测+特征点云，不依赖Depth）+ SceneView(arsceneview 2.2.0) + MediaPipe/YOLO（规划中）+ 声明式规则引擎（未实现）。
+
+## 2. 当前完成进度（关键）
+
+| 模块 | 进度 | 说明 |
+|---|---|---|
+| **知识库** | ✅ 完成 | 6 书语料 17.6万字 + 74 条规则（active 58/dormant 15/hidden 1），全部过原文子串校验 |
+| **冲突登记** | ✅ 完成 | CONFLICT-001 已裁决；后出矛盾规则标 hidden 完全不呈现 |
+| **设计定稿** | ✅ 完成 | 单房间模型 + 整改求解器 + 朝向四级方案（见 docs/app_design.md）|
+| **环境/构建** | ✅ 完成 | JDK21 + Android SDK35 + Gradle8.9 + 阿里云镜像，APK 可产出 |
+| **A1.1 AR 会话** | ✅ **真机验证通过** | 平面检测真机工作正常（1→7），修复了权限启动崩溃 |
+| A1.2 点云采集 | ⏸ 待开发 | — |
+| A1.3 户型多边形 | ⏸ 待开发 | — |
+| A1.4 物体识别+3D定位 | ⏸ 待开发 | 需 K3 模型 |
+| K3 视觉模型 | ⏸ 待开发 | — |
+| 规则引擎/整改求解器 | ⏸ 未实现 | 仅设计文档 |
+| 产品交互（onboarding/报告页）| ⏸ 未实现 | — |
+
+## 3. 目录结构
+
+```
+/home/aci/桌面/fengshui-app/
+├── corpus/
+│   ├── raw/         # 6书抓取原文（OCR未校对）
+│   └── proofed/     # 归一化语料 + quotes_*.txt 引文库（校验基准）
+├── rules/draft/     # 74条规则卡 JSON + bagua_data.json（游年数据）
+├── scripts/
+│   ├── ctext_fetch.py      # 从ctext抓书（章节ID参数）
+│   ├── normalize_corpus.py # 归一化/合并
+│   └── validate_rules.py   # 强制原文子串校验 + 冲突自检（python3 scripts/validate_rules.py）
+├── docs/
+│   ├── app_design.md       # ★ 设计定稿（先读）
+│   ├── dependency_matrix.md# 识别范围 v3
+│   ├── conflict_registry.md
+│   ├── rule_schema_v1.md   # 规则卡字段规范
+│   ├── corpus_manifest.md
+│   └── ROADMAP.md          # 本文件
+└── app/                    # Android 工程（Gradle）
+```
+
+## 4. 环境与构建（本机）
+
+- **环境变量**：见 `~/.bashrc`（JAVA_HOME=/home/aci/devtools/jdk-21.0.12+8、ANDROID_HOME=/home/aci/Android/Sdk、gradle 8.9）
+- **镜像**（maven.google.com 被墙，必用）：工程 `settings.gradle.kts` 已配阿里云 google 镜像 + mavenCentral；wrapper 指向腾讯 gradle
+- **构建**：
+  ```
+  cd /home/aci/桌面/fengshui-app/app
+  export JAVA_HOME=$HOME/devtools/jdk-21.0.12+8
+  export ANDROID_HOME=$HOME/Android/Sdk
+  export PATH=$JAVA_HOME/bin:$PATH
+  ./gradlew :app:assembleDebug
+  # 产物: app/app/build/outputs/apk/debug/app-debug.apk
+  ```
+- **注意**：后台任务用 `( setsid ./gradlew ... </dev/null >log 2>&1 & )` 脱离，避免被工具超时清理；不要用 `pgrep -f assembleDebug` 判断（会自匹配）。
+
+## 5. 真机联调（无线 adb）
+
+手机 **Redmi Note 12 Turbo**（HyperOS 3.0.5.0 / Android 15），已侧载 ARCore v1.55。
+- **复连步骤**（无线调试若被关闭，需重新开）：
+  1. 手机：设置→开发者选项→无线调试→开启；点"使用配对码配对设备"记**配对端口+配对码**
+  2. 本机：`adb pair <手机IP:配对端口> <配对码>` → `adb connect <手机IP:连接端口>` → `adb devices`
+  - 之前连接信息参考：`192.168.52.114:40329`（连接端口，可能变化）；手机在 192.168.52.x，本机 192.168.181.x，路由互通
+- **已验证**：`com.google.ar.core` v1.55 已装；app 可 adb install
+- **日志**：`adb logcat -d | grep A1Scan`
+
+## 6. 关键设计决策（勿重新讨论）
+
+1. 单房间分析模型（非整宅多房间）
+2. 3D 建模用方案A（ARCore 平面检测+特征点云，不依赖 Depth）；3DGS 二期
+3. 方向基准=磁北（罗盘惯例）；命卦路为主（四吉凶方），坐向可选（宅卦游年）
+4. 识别清单 11 类+办公 desk 等（K2 v3）；镜不引入（缺八宅明镜/阳宅三要文本，已搁置）
+5. 朝向：扫描帧自动定长轴 + 墙邻先验 + 异常时一次点选；未知不判定
+6. 整改求解器：硬约束（消凶+无回归）> 软目标（构造吉）；L1移动/L2遮挡/L3改造；灶视为固定；无解给次优+权衡
+7. 冲突处理：保留较早出处，hidden 完全不呈现
+8. 办公场景：宅法举隅·衙署/学宫/店铺直接映射（非纯推演）
+
+## 7. 下一步待办（优先级排序）
+
+| # | 任务 | 验收标准 |
+|---|---|---|
+| 1 | **A1.2 点云采集**：ScanScreen 每帧 `frame.acquirePointCloud()` 累积世界坐标点云，降采样+可导出 | 真机扫描环绕一圈，导出点云可见房间形状 |
+| 2 | **A1.3 户型多边形**：地板平面+墙平面交线→房间边界多边形 | 30秒扫描出可辨认房型 |
+| 3 | **K3 视觉模型**：YOLOv8n(COCO 6类) + YOLO-World(补 门/窗/灶/柱/衣柜/书桌/前台) → TFLite 端上化 | 端上可检测 11 类 |
+| 4 | **A1.4 物体3D定位**：检测框中心+相机位姿+点云/平面反投影→3D坐标，多帧聚类 | 床/门/灶等可标位 |
+| 5 | **规则引擎**：事实层→派生事实(卦位/相冲/墙邻/密度)→74条规则求值→按物体聚合 | 规则可触发输出 |
+| 6 | **整改求解器**：消凶+无回归+构造吉，按 app_design 定稿实现 | 给出整改方案+对照表 |
+| 7 | **产品交互**：onboarding(生辰)、场景/房间类型选择、北向校准、报告页 | 完整闭环可演示 |
+
+## 8. 未决问题 / 风险
+
+- **环境/工具挂起**：构建曾卡在 mediapipe AAR 下载（慢非断），已通过；重新构建若慢，耐心等待或换版本
+- **pip**：PEP 668 需 `--break-system-packages`（已用）
+- **《阳宅三要》错文件**（内容实为阴宅文）已弃用，勿再引用
+- **待补文本已搁置**：《阳宅集成》《八宅明镜》《阳宅三要》、现代办公资料
+- **引文质量**：阳宅十书/阳宅大全为 OCR 初稿，规则引用段落已人工校对进 quotes_*.txt；新增引用必须过 `validate_rules.py`
+- **手机无 GMS 账号**：已用侧载解决 ARCore；重新连接需重新开启无线调试
+- **真机协作依赖**：A 系列里程碑需用户配合真机扫描测试
+
+## 9. 接手第一步建议
+
+1. 读 `docs/app_design.md` + 本文
+2. 跑 `python3 scripts/validate_rules.py` 确认知识库完好
+3. 构建一次确认环境可用
+4. 从待办 #1（A1.2 点云）开始，按"本机构建→无线adb装真机→日志验证"闭环推进

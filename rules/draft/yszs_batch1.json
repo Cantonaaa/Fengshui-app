@@ -1,0 +1,509 @@
+[
+  {
+    "ruleId": "yszs_mg_01",
+    "title": "三元九运·甲子定元",
+    "severity": "平",
+    "schools": ["八宅"],
+    "category": "minggua",
+    "status": "active",
+    "condition": { "require": { "birth": 1 } },
+    "finding": {
+      "summary": "命卦计算以三元甲子为基准：一百八十年一大周天，每六十年一元（上元、中元、下元），生人年份落何宫即为福德宫（命卦）。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论福元第二",
+        "quoteKey": "yszs_minggua_01",
+        "original": "法以一百八十年為一大周天第一甲子六十年為上元第二甲子六十年為中元第三甲子六十年為下元此之謂三元",
+        "modern": "以一百八十年为一大周期，第一个甲子六十年为上元，第二个为中元，第三个为下元，合称三元。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_mg_02",
+    "title": "命卦即福德宫·男中五寄坤女寄艮",
+    "severity": "平",
+    "schools": ["八宅"],
+    "category": "minggua",
+    "status": "active",
+    "condition": { "require": { "birth": 1 } },
+    "finding": {
+      "summary": "以洛书九宫排年，生人年份所值之卦即其福德宫（命卦）；五为中宫时男寄坤、女寄艮。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论福元第二",
+        "quoteKey": "yszs_minggua_02",
+        "original": "洛書九宮八卦一年屬洛書戴九履一左三右七二四為肩六八為足生人之年值何卦此卦即為福德宮男中五則寄坤宮女中五則寄艮宮",
+        "modern": "以洛书九宫配年，生年所值之卦即为福德宫（命卦）。命宫为五时，男寄坤宫、女寄艮宫。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_mg_03",
+    "title": "东西四位宅·命宅相配",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "minggua",
+    "status": "active",
+    "condition": { "require": { "birth": 1, "room": 1 } },
+    "finding": {
+      "summary": "震、巽、坎、离为东四位，坤、乾、艮、兑为西四位。东四命宜居东四位宅并修整东四方位，西四命宜居西四位宅，如此祸福方吉。",
+      "remedy": ["东四命者宜居住、修整宅之东、东南、南、北四方位", "西四命者宜居住、修整宅之西南、西北、东北、西四方位"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论福元第二",
+        "quoteKey": "yszs_minggua_03",
+        "original": "震巽坎離福德為東四位生人乾坤艮兌福德為西四位生人東四位則修震巽坎離西四位則修乾坤艮兌而禍福永無差謬矣",
+        "modern": "命宫属震巽坎离的是东四位生人，属乾坤艮兑的是西四位生人。东四位修东四方位、西四位修西四方位，祸福就没有差错。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_dw_09",
+    "title": "吉星方位宜高大·凶星方位宜低小",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "direction",
+    "status": "active",
+    "condition": { "require": { "room": 1, "direction": 1, "birth": 1 } },
+    "finding": {
+      "summary": "依宅卦配大游年，生气、延年、天乙、伏位为吉星，所居方位房屋宜高大；绝命、五鬼、六煞、祸害为凶星，方位宜低小。",
+      "remedy": ["吉星方位（生气/延年/天乙/伏位）可作主房、宜高大", "凶星方位（绝命/五鬼/六煞/祸害）宜低小，不宜作主卧或高大建筑"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷二·论穿宫九星/大游年",
+        "quoteKey": "yszs_dingwei_09",
+        "original": "吉星宜高大凶星宜低小",
+        "modern": "吉星所在的方位房屋宜高大，凶星所在的方位房屋宜低小。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_zhu_01",
+    "title": "灶宜居左位·忌安白虎方",
+    "severity": "凶",
+    "schools": ["八宅", "形法"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1 }, "spatial": { "stove": ["onRightSideOfRoom"] } },
+    "finding": {
+      "summary": "厨房灶位须安在房屋左侧，不宜安在右侧（白虎方），否则主凶，子孙不昌。",
+      "remedy": ["将灶移置房屋左侧（青龙方）", "若无法移动，以矮柜/屏风在灶与右侧间作隔断化解"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_zhu_01",
+        "original": "灶必須居左位不宜安在白虎方陽宅若還依此法定須子孫熾吉昌",
+        "modern": "灶必须安在左边位置，不宜安在右边白虎方。阳宅若按此法布置，必定子孙昌盛。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_zhu_02",
+    "title": "厨房（火淹）宜在宅凶方·不宜在吉方",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "stove",
+    "status": "active",
+    "conflict": { "groupId": "stove_position", "resolveTo": "yszs_zhu_02", "hiddenRuleIds": ["zfj_zonglun_01"] },
+    "condition": { "require": { "stove": 1, "direction": 1, "birth": 1 } },
+    "finding": {
+      "summary": "火淹即厨房。灶属火、主烹养，宜安置在宅之凶方，不宜在吉方，吉方宜安卧房与主位。",
+      "remedy": ["厨房宜设于宅之凶星方位（五鬼/祸害/六煞/绝命等）", "吉星方位（生气/延年/天乙/伏位）不宜设厨房"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_zhu_02",
+        "original": "火淹即是廚房止宜在宅凶方不宜在吉方此兩言盡之矣",
+        "modern": "厨房宜安在宅的凶方，不宜安在吉方，这两句话已尽其中道理。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_zhu_03",
+    "title": "坎宅·灶宜在东北五鬼方",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1, "direction": 1, "birth": 1 }, "match": { "houseTrigram": "坎" } },
+    "finding": {
+      "summary": "坐北向南之坎宅，厨灶宜设于宅东北（甲寅字）五鬼凶方，主大吉。",
+      "remedy": ["坎宅（坐北朝南）厨房宜置东北方位"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论福元第二·东四位宅图说",
+        "quoteKey": "yszs_zhu_03",
+        "original": "坎宅廚灶宜在宅東北甲寅字五鬼方大吉",
+        "modern": "坎宅的厨灶宜设在宅的东北（甲寅字）五鬼方位，主大吉。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_zhu_04",
+    "title": "离宅·灶宜在东北祸害方",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "stove",
+    "status": "active",
+    "condition": { "require": { "stove": 1, "direction": 1, "birth": 1 }, "match": { "houseTrigram": "离" } },
+    "finding": {
+      "summary": "坐南向北之离宅，厨灶宜设于宅东北（甲寅字）祸害凶方，主大吉。",
+      "remedy": ["离宅（坐南朝北）厨房宜置东北方位"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论福元第二·东四位宅图说",
+        "quoteKey": "yszs_zhu_04",
+        "original": "離宅廚灶宜在宅東北甲寅字禍害方大吉",
+        "modern": "离宅的厨灶宜设在宅的东北（甲寅字）祸害方位，主大吉。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_door_01",
+    "title": "门上忌起高楼",
+    "severity": "大凶",
+    "schools": ["形法", "八宅"],
+    "category": "door",
+    "status": "active",
+    "condition": { "require": { "door": 1 }, "spatial": { "room": ["aboveDoorHeightHigh"] } },
+    "finding": {
+      "summary": "大门正上方起高楼（或上方结构高大压迫），主家长遭牢狱之灾；白虎方位（宅之右方）起高楼，主家长多忧。",
+      "remedy": ["避免在大门正上方设置高大结构或房间", "白虎方（宅右）不宜起高耸建筑，可降低或移走"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_door_01",
+        "original": "古云門上起高樓家長遭獄囚又云白虎位上起一樓註定家長憂",
+        "modern": "古语说：大门上起高楼，家长会遭牢狱之灾；又说白虎位上起高楼，注定家长多忧。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_door_02",
+    "title": "安门须避直冲尖射",
+    "severity": "凶",
+    "schools": ["形法", "八宅"],
+    "category": "door",
+    "status": "active",
+    "condition": { "require": { "door": 1 }, "spatial": { "door": ["facesObjectDirectly"] } },
+    "finding": {
+      "summary": "安门须配合福元（命卦）并取吉星方位，且须避开直冲、尖角、斜射等冲煞，否则不利。",
+      "remedy": ["大门避免正对尖锐物体、墙角、柱子", "大门前宜留明堂空间，忌直冲巷道或尖角"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷二·论开门修造门第六",
+        "quoteKey": "yszs_door_02",
+        "original": "凡安門專主福元配合吉星無不大發須避直沖尖射",
+        "modern": "安门应专主福元、配合吉星方位，无不发达；但须避开直冲尖射。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_door_03",
+    "title": "门忌对厕所（粪屋）",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "toilet",
+    "status": "active",
+    "condition": { "require": { "door": 1, "toilet": 1 }, "spatial": { "toilet": ["facesDoor"] } },
+    "finding": {
+      "summary": "大门对面有厕所（粪屋），主家人生疮疥疾病，污秽之气冲门不吉。",
+      "remedy": ["厕所门不宜正对大门", "以屏风、门帘遮挡，或改换厕所开门方向"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_door_03",
+        "original": "糞屋對門癰疥常存",
+        "modern": "粪屋正对大门，家中常生疮疥。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_door_04",
+    "title": "井忌当大门",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "dormant",
+    "condition": { "require": { "door": 1, "well": 1 }, "spatial": { "well": ["facesDoor"] } },
+    "finding": {
+      "summary": "井不可正对大门，否则主官讼之灾。",
+      "remedy": ["井位避开大门正前方", "无法移动则掩埋或改址"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_door_04",
+        "original": "凡宅井不可當大門主官訟",
+        "modern": "凡宅井不可正对大门口，主官讼。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_door_05",
+    "title": "大门两扇须大小一般",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "dormant",
+    "condition": { "require": { "door": 1 }, "spatial": { "door": ["leavesUneven"] } },
+    "finding": {
+      "summary": "大门门扇（及两侧墙）应大小一致；左大主克损妻室，右大主孤寡。",
+      "remedy": ["门扇更换为左右一致", "保持大门两侧对称"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_door_05",
+        "original": "大門門扇及兩畔牆須要大小一般左大主慎妻右大主孤寡",
+        "modern": "大门门扇及两边墙须大小一致；左边大主伤妻，右边大主孤寡。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_door_06",
+    "title": "门户为宅之通气要口",
+    "severity": "平",
+    "schools": ["八宅", "形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "door": 1 } },
+    "finding": {
+      "summary": "房屋之内气因墙壁隔断，唯门户可通内外之气；和气得之则致祥，乖气得之则致戾，故门户方位至为关键。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷二·论开门修造门第六",
+        "quoteKey": "yszs_door_06",
+        "original": "惟是居房屋中氣因隔別所以通氣祗此門戶耳門戶通氣之處和氣則致祥乖氣則致戾乃造化一定之理",
+        "modern": "人居住于房屋之中，气因墙壁隔断，能通气的只有门户。门户通气之处，和气则吉祥，乖气则乖戾，这是自然不变的道理。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_room_01",
+    "title": "天井忌蓄水·忌安乱石",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "room",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["hasWaterPoolOrRocks"] } },
+    "finding": {
+      "summary": "宅中天井（庭院）不可蓄水，蓄水主患疾病；不可安放乱石，主患眼疾。",
+      "remedy": ["天井/中庭保持干爽，不积水", "移去天井中的散乱石块"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_room_01",
+        "original": "凡宅天井中不可蓄水主患疾病不可安亂石主患眼疾",
+        "modern": "凡宅天井之中不可蓄水，蓄水主患疾病；不可安放乱石，乱石主患眼疾。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_room_02",
+    "title": "屋后忌开重门",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "dormant",
+    "condition": { "require": { "door": 1 }, "spatial": { "room": ["hasRearSecondDoor"] } },
+    "finding": {
+      "summary": "宅屋之后不可开第二重门（后门对后门），主遭盗贼；如门开在侧边则不妨，北方亦然。",
+      "remedy": ["屋后重门改至侧边位置", "关闭并封堵无用的后门"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_room_02",
+        "original": "凡宅屋後莫開重門要被盜退則如在側邊不妨北方開門亦然",
+        "modern": "凡宅屋后莫开重门，会被盗；若门开在侧边则无妨，北方开重门也是如此。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_room_03",
+    "title": "屋后忌起小屋",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "room",
+    "status": "dormant",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["hasSmallBuildingBehind"] } },
+    "finding": {
+      "summary": "主屋之后不可另起小屋，谓之「停丧」，主损人口，大不吉。",
+      "remedy": ["拆除屋后小屋", "无法拆除则改作其他用途并保持整洁"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_room_03",
+        "original": "人家起屋屋後莫起小屋謂之停喪損人口",
+        "modern": "人家起屋，屋后莫起小屋，谓之停丧，会损伤人口。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_room_04",
+    "title": "屋角忌侵射大门",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "door",
+    "status": "active",
+    "condition": { "require": { "door": 1 }, "spatial": { "room": ["cornerPointsAtDoor"] } },
+    "finding": {
+      "summary": "正屋的屋角不可对着大门侵射，屋角冲门主凶。",
+      "remedy": ["调整大门位置避开屋角", "在冲射处以屏风、绿植遮挡"]
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷三·论宅内形第八",
+        "quoteKey": "yszs_room_04",
+        "original": "正住屋莫要屋角侵射其門",
+        "modern": "正屋莫让屋角侵射大门。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_wx_01",
+    "title": "宅之四象（青龙白虎朱雀玄武）",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "waixing",
+    "status": "dormant",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["fourSymbolsGood"] } },
+    "finding": {
+      "summary": "宅左有流水（青龙）、右有长道（白虎）、前有汙池（朱雀）、后有丘陵（玄武），四者齐备为最贵之地。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_waixing_01",
+        "original": "凡宅左有流水謂之青龍右有長道謂之白虎前有汙池謂之朱雀後有丘陵謂之玄武為最貴地",
+        "modern": "凡宅左边有流水为青龙，右边有长道为白虎，前面有汙池为朱雀，后面有丘陵为玄武，四象齐全是最贵之地。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_wx_02",
+    "title": "宅形前低后高为吉",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "waixing",
+    "status": "dormant",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["frontLowerThanBack"] } },
+    "finding": {
+      "summary": "宅地前低后高，主出英豪之才；前高后低，主长幼昏昧。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_waixing_02",
+        "original": "凡宅前低後高世出英豪前高後低長幼昏迷",
+        "modern": "凡宅前低后高，世代出英豪；前高后低，长幼昏昧。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_wx_03",
+    "title": "忌四面交冲",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "waixing",
+    "status": "dormant",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["surroundedByRoadsWater"] } },
+    "finding": {
+      "summary": "宅四周有水路、桥梁四面交冲，主子孙怯弱，不吉。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_waixing_03",
+        "original": "凡宅水路橋梁四面交衝使子孫怯弱主不吉",
+        "modern": "凡宅被水路桥梁四面交冲，主子孙怯弱，不吉。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "yszs_wx_04",
+    "title": "不居当冲寺庙狱门之地",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "waixing",
+    "status": "dormant",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["nearTempleJailJuncture"] } },
+    "finding": {
+      "summary": "宅不宜建于当冲口、寺庙、祠社、窑冶官衙、草木不生处、故军营战地、正对水流处、山脊冲处、大城门口、对狱门处等地。",
+      "remedy": []
+    },
+    "evidence": [
+      {
+        "book": "阳宅十书",
+        "chapter": "卷一·论宅外形第一",
+        "quoteKey": "yszs_waixing_04",
+        "original": "凡宅不居當衝口處不居寺廟不近祠社窯冶官衙不居草木不生處不居故軍營戰地不居正當水流處不居山脊衝處不居大城門口處不居對獄門處",
+        "modern": "凡宅不居当冲口、寺庙、祠社、窑冶官衙、草木不生、故军营战地、正当水流、山脊冲、大城门口、正对狱门之处。",
+        "reliability": "直接明确"
+      }
+    ]
+  }
+]
