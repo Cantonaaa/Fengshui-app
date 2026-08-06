@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/aci/桌面/fengshui-app/app/app/.cxx/Debug/xp5f1829/arm64-v8a",
-  "command": "/home/aci/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ --target=aarch64-none-linux-android26 --sysroot=/home/aci/Android/Sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/sysroot -Dyoloworld_EXPORTS -I/home/aci/桌面/fengshui-app/app/app/src/main/jni/ncnn/arm64-v8a/include -isystem /home/aci/桌面/fengshui-app/app/app/src/main/jni/ncnn/arm64-v8a/include/ncnn -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security  -std=c++11 -fopenmp -fno-limit-debug-info  -fPIC -fno-rtti -fno-exceptions -pthread -std=gnu++11 -o CMakeFiles/yoloworld.dir/yoloworld.cpp.o -c /home/aci/桌面/fengshui-app/app/app/src/main/jni/yoloworld.cpp",
-  "file": "/home/aci/桌面/fengshui-app/app/app/src/main/jni/yoloworld.cpp"
-}
-]

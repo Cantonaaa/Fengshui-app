@@ -23,3 +23,10 @@ Thumbs.db
 *.key
 *.pem
 .git-credentials
+
+# CMake/NDK 构建产物
+**/.cxx/
+**/build/
+
+# ncnn 预编译库（第三方，按 ncnn release 下载后放入）
+app/app/src/main/jni/ncnn/
