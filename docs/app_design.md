@@ -18,9 +18,19 @@
 ```
 UserProfile { birthInfo(公历生日+时辰, 加密存储), mingua }
 RoomRecord  { scenario, roomFunction, facing?(可选坐向), northRotation,
-              modelRef, objects[] }
-Object      { type, pos3D, bbox, facing?, sector(卦位), movability }
+              modelRef, objects[], occupancyMap }
+Object      { type, pos3D, bbox, facing?, sector(卦位),
+              movability, placement(贴墙类/自由类),
+              footprint(占地), dimensions(实测+confidence),
+              generic(占位不分类:bool) }
+Room.occupancyMap:
+  ├─ 已占用区域（所有物体 footprint，含 generic 占位物）
+  ├─ 自由区域（补集）
+  └─ 墙侧可用区（每段墙旁空闲条带，供贴墙类家具）
 ```
+
+- `dimensions`：扫描实测（点云+多帧三角化+地板平面约束），高置信用实测、低置信回退类型默认尺寸；用户可在 3D 标注页微调
+- `generic`：非规则类物体只进占用图、不分类、不触发规则（词表保持最小）
 
 ## 三、技术决策清单
 
@@ -29,6 +39,7 @@ Object      { type, pos3D, bbox, facing?, sector(卦位), movability }
 | 平台 | Android 优先，端上为主，全离线隐私 |
 | 3D建模 | 方案A：ARCore 平面检测+特征点云+VIO 位姿→户型多边形+点位；不依赖 Depth API；3DGS 二期 |
 | 识别范围 | 住宅 11 类 + 办公新增（见 dependency_matrix v3）|
+| 识别模型 | **YOLO-World 单模型 + 固定小词表（仅规则类）**；ONNX→TFLite 导出；真机帧率实测，不达标则 GroundingDINO 标注→蒸馏小模型 |
 | 物体朝向 | 三级：位置锥角近似(±30°+距离)→墙邻先验(床/沙发/灶/门)→用户微调；朝向未知不判定 |
 | 方向基准 | 磁北（罗盘惯例，无需磁偏角修正）；θ₀ 记录 + 3D 视图人工微调 |
 | 命卦/坐向 | 命卦路为主（四吉凶方，只需生辰+北向）；坐向可选（启用宅卦游年吉凶位）|
@@ -38,7 +49,9 @@ Object      { type, pos3D, bbox, facing?, sector(卦位), movability }
 | 规则库 | 74 条（active 58/dormant 15/hidden 1）；6 书语料 17.5万字 |
 | 冲突处理 | 保留较早出处，后出 hidden 完全不呈现（docs/conflict_registry.md）|
 | 引擎 | 事实层→派生事实(卦位/相对关系/墙邻/密度)→规则求值→按物体聚合 |
-| 整改求解 | 双层目标：硬约束(消凶+全量重评估无回归) > 软目标(构造吉)；L1移动/L2遮挡/L3改造；可移动/固定(含灶)/可新增屏风；无解给次优+权衡；整改后对照表 |
+| 整改求解 | 双层目标：硬约束(消凶+全量重评估无回归) > 软目标(构造吉)；L1移动/L2遮挡/L3改造；**L1 只移动目标物体，其他家具=固定障碍**；被占阻挡→提示"需人工移开【类型】"；无解给次优+权衡；整改后对照表 |
+| 放置要求 | 贴墙类(床/沙发/衣柜)→**沿墙空位生成**（贴墙侧=床头/靠背，同时定朝向）；自由类(餐桌/盆栽/冰箱)→任意空位；净空 0.3-0.5m |
+| 玻璃窗 | 窗户=**YOLO-World "window" 视觉检测为主**（2D框+位姿+距离→3D）；点云辅助；墙平面裁剪去玻璃透反射鬼影点 |
 
 ## 四、整改求解器（Remediation Solver）
 
@@ -55,6 +68,10 @@ Object      { type, pos3D, bbox, facing?, sector(卦位), movability }
 ```
 
 可移动性分类：可移动(床/沙发/餐桌/衣柜/冰箱/盆栽)、固定(门/窗/厕/墙/**灶**→只走L2遮挡或L3改造)、可新增(屏风/隔断)。
+
+**L1 移动策略**：只移动"目标物体"，其他一切视为固定障碍；目标位 = 占用图中空位（贴墙类=沿墙空位，自由类=任意空位）+ 净空 + 无回归检查；被占阻挡 → 尝试其他空位 → 仍无 → 提示"需人工移开【类型】"。不判断其他家具可移动性（词表保持最小）。
+
+**尺寸来源**：扫描实测优先（点云点数/多帧方差判定置信度），低置信回退类型默认（床2.0×1.5m、沙发1.8×0.9m、衣柜0.6×1.8m 等）。
 
 ## 五、报告结构
 
