@@ -143,6 +143,18 @@ fun ScanScreen(onBack: () -> Unit) {
                             },
                             modifier = Modifier.padding(top = 8.dp)
                         ) { Text("导出点云 (PLY)") }
+                        Button(
+                            onClick = {
+                                val poly = RoomPolygon.buildPolygon(recorder.getPoints())
+                                status = if (poly != null) {
+                                    "户型多边形: ${poly.vertices.size} 顶点, 面积 ${"%.1f".format(poly.area)} m²"
+                                } else {
+                                    "点云不足，无法生成户型"
+                                }
+                                Log.i(TAG, status)
+                            },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) { Text("生成户型 (面积)") }
                         Text(
                             "← 返回",
                             modifier = Modifier.padding(top = 8.dp),

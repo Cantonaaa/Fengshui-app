@@ -24,6 +24,9 @@ class PointCloudRecorder(
 
     val size: Int get() = points.size
 
+    /** 返回点云副本（供户型多边形计算）。 */
+    fun getPoints(): List<FloatArray> = points.toList()
+
     /** 每帧调用；内部按 sampleEveryNFrames 与 stride 降采样。 */
     fun onFrame(frame: Frame, sampleEveryNFrames: Int = 5, stride: Int = 3) {
         frameCount++
