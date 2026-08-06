@@ -52,7 +52,7 @@ fun ScanScreen(onBack: () -> Unit) {
     var pointCount by remember { mutableIntStateOf(0) }
     var objCount by remember { mutableIntStateOf(0) }
     val recorder = remember { PointCloudRecorder() }
-    val detector = remember { ObjectDetector(context) }
+    val detector = remember { YOLOWorldNcnn(context) }
     var detectorLoaded by remember { mutableStateOf(false) }
     val detFrameCounter = remember { intArrayOf(0) }
 

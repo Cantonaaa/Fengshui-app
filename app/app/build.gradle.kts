@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.fengshui.app"
     compileSdk = 35
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         applicationId = "com.fengshui.app"
@@ -15,8 +16,15 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++11 -fopenmp"
+                arguments += "-DANDROID_STL=c++_shared"
+            }
+        }
+
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += listOf("arm64-v8a")
         }
     }
 
@@ -42,6 +50,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/jni/CMakeLists.txt")
+        }
+    }
 }
 
 dependencies {
@@ -58,8 +72,4 @@ dependencies {
     // ARCore
     implementation(libs.arcore)
     implementation(libs.sceneview.ar)
-
-    // 物体识别 (MediaPipe Tasks 自带 TFLite 运行时)
-    implementation(libs.tensorflow.lite)
-    implementation(libs.mediapipe.tasks.vision)
 }
