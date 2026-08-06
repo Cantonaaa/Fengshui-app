@@ -50,7 +50,11 @@ fun ScanScreen(onBack: () -> Unit) {
     var arcoreReady by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
     var pointCount by remember { mutableIntStateOf(0) }
+    var objCount by remember { mutableIntStateOf(0) }
     val recorder = remember { PointCloudRecorder() }
+    val detector = remember { ObjectDetector(context) }
+    var detectorLoaded by remember { mutableStateOf(false) }
+    val detFrameCounter = remember { intArrayOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -109,6 +113,31 @@ fun ScanScreen(onBack: () -> Unit) {
                                 Log.i(TAG, "已检测平面: ${planes.size}")
                             }
                             recorder.onFrame(frame)
+                            // A1.4：选帧检测（每 15 帧一次）+ 3D 定位
+                            detFrameCounter[0]++
+                            if (detectorLoaded && detFrameCounter[0] % 15 == 0) {
+                                try {
+                                    frame.acquireCameraImage().use { img ->
+                                        val bmp = YuvUtils.toBitmap(img)
+                                        if (bmp != null) {
+                                            val dets = detector.detect(bmp)
+                                            if (dets.isNotEmpty()) {
+                                                objCount = dets.size
+                                                val floorH = recorder.minY
+                                                dets.take(6).forEach { d ->
+                                                    val pos = ObjectLocalizer.projectToFloor(
+                                                        frame.camera, d.cx, d.cy, floorH
+                                                    )
+                                                    val p = if (pos != null) "%.1f,%.1f".format(pos[0], pos[2]) else "?"
+                                                    Log.i(TAG, "检测 ${d.cls} score=%.2f @($p)".format(d.score))
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "检测帧处理失败: ${e.message}")
+                                }
+                            }
                         }
                     )
                     Column(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
@@ -121,6 +150,14 @@ fun ScanScreen(onBack: () -> Unit) {
                         )
                         Text(
                             "点云点数: $pointCount",
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White
+                        )
+                        Text(
+                            "识别物体: ${if (detectorLoaded) objCount.toString() else "模型未就绪"}",
                             modifier = Modifier
                                 .padding(top = 4.dp)
                                 .background(Color.Black.copy(alpha = 0.5f))
@@ -172,6 +209,13 @@ fun ScanScreen(onBack: () -> Unit) {
             pointCount = recorder.size
             kotlinx.coroutines.delay(500)
         }
+    }
+
+    // 加载 K3 检测模型（assets/yolo_world.tflite）
+    LaunchedEffect(Unit) {
+        detector.load()
+        detectorLoaded = detector.isReady
+        if (detectorLoaded) Log.i(TAG, "K3 检测模型就绪") else Log.w(TAG, "K3 检测模型缺失，检测暂不可用")
     }
 
     // 首次进入且未授权时发起授权（LaunchedEffect：须在合成后调用 launcher，避免崩溃）
