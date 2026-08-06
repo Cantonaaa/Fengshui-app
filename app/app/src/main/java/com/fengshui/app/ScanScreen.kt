@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import com.google.ar.core.ArCoreApk
 import com.google.ar.core.Config.PlaneFindingMode
 import com.google.ar.core.Plane
 import io.github.sceneview.ar.ARScene
+import kotlinx.coroutines.delay
 
 private const val TAG = "A1Scan"
 
@@ -47,6 +49,8 @@ fun ScanScreen(onBack: () -> Unit) {
     var status by remember { mutableStateOf("检查 ARCore...") }
     var arcoreReady by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
+    var pointCount by remember { mutableIntStateOf(0) }
+    val recorder = remember { PointCloudRecorder() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -104,17 +108,26 @@ fun ScanScreen(onBack: () -> Unit) {
                                 planeCount = planes.size
                                 Log.i(TAG, "已检测平面: ${planes.size}")
                             }
+                            recorder.onFrame(frame)
                         }
                     )
-                    Text(
-                        "检测到平面: $planeCount",
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 16.dp)
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        color = Color.White
-                    )
+                    Column(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
+                        Text(
+                            "检测到平面: $planeCount",
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White
+                        )
+                        Text(
+                            "点云点数: $pointCount",
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White
+                        )
+                    }
                 }
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -122,15 +135,30 @@ fun ScanScreen(onBack: () -> Unit) {
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Text(status)
-                        Text("缓慢移动手机，扫描地面与墙面（A1.1 验证）")
+                        Text("缓慢移动手机，环绕房间完整走一圈（A1.2 点云采集）")
+                        Button(
+                            onClick = {
+                                val f = recorder.exportPly(context)
+                                status = if (f != null) "已导出: ${f.name}" else "尚无点云"
+                            },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) { Text("导出点云 (PLY)") }
                         Text(
                             "← 返回",
-                            modifier = Modifier.padding(top = 4.dp),
+                            modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
             }
+        }
+    }
+
+    // 定时刷新点云计数显示
+    LaunchedEffect(arcoreReady) {
+        while (arcoreReady) {
+            pointCount = recorder.size
+            kotlinx.coroutines.delay(500)
         }
     }
 
