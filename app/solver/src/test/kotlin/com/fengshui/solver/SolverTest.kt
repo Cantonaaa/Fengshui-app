@@ -134,4 +134,60 @@ class RemediationSolverTest {
         assertTrue(r.id.isNotBlank())
         assertTrue(r.condition.require.isNotEmpty() || r.condition.spatial.isNotEmpty())
     }
+
+    // ===== 边缘情况（B5 优化） =====
+
+    @Test fun jointSolve_multipleViolationsOneMove() {
+        // 同一物体（床）多个违规：无靠 + 近灶 → 一次移动同时消除
+        val f = Fixtures.rectRoom(6.0, 4.0)
+        f.objects.add(Furniture("bed1", "bed", Pt(3.0, 2.0), 2.0, 1.0, Placement.WALL_NEEDING, Movability.MOVABLE))
+        f.objects.add(Furniture("stove1", "stove", Pt(5.5, 2.0), 0.8, 0.6, Placement.FREESTANDING, Movability.FIXED))
+
+        val bedBacking = Fixtures.rule("bed_backing", "凶", "bed", "noBacking")
+        val bedNearStove = Fixtures.rule("bed_nearstove", "凶", "bed", "nearStove")
+        val solver = RemediationSolver(listOf(bedBacking, bedNearStove))
+
+        val plan = solver.solve(f, listOf("bed_backing", "bed_nearstove"))
+
+        // 一次移动解决两个违规
+        assertEquals(1, plan.actions.size)
+        assertEquals("bed1", plan.actions[0].objectId)
+        assertTrue(plan.remainingViolations.isEmpty())
+        assertTrue(!ConditionEvaluator.violated(bedBacking.condition, f))
+        assertTrue(!ConditionEvaluator.violated(bedNearStove.condition, f))
+    }
+
+    @Test fun shortWall_noSolution() {
+        // 所有墙段都太短（1.5m）放不下床长边（2m）→ 无解
+        val f = Fixtures.rectRoom(1.5, 1.5)
+        f.objects.add(Furniture("bed1", "bed", Pt(0.75, 0.75), 2.0, 1.0, Placement.WALL_NEEDING, Movability.MOVABLE))
+        val bedBacking = Fixtures.rule("bed_backing", "凶", "bed", "noBacking")
+        val solver = RemediationSolver(listOf(bedBacking))
+        val plan = solver.solve(f, listOf("bed_backing"))
+        // 墙长 1.5 < 床长 2 → 无候选 → 无解/权衡
+        assertTrue(plan.actions.isEmpty())
+        assertTrue(plan.tradeoffNotes.isNotEmpty() || plan.blockedNotes.isNotEmpty())
+    }
+
+    @Test fun suboptimalWithTradeoff() {
+        // 无完美解：唯一可移墙位（整面左墙）都在"西"（引入平级 inWest 违规）→ 次优+权衡
+        val f = Fixtures.rectRoom(6.0, 4.0)
+        f.objects.add(Furniture("bed1", "bed", Pt(3.0, 2.0), 2.0, 1.0, Placement.WALL_NEEDING, Movability.MOVABLE))
+        // 右/底/顶墙堵住；底/顶柜不延伸到左墙（避免净空误伤）
+        f.objects.add(Furniture("r1", "wardrobe", Pt(5.6, 2.0), 0.4, 3.0, Placement.WALL_NEEDING, Movability.FIXED))
+        f.objects.add(Furniture("b1", "wardrobe", Pt(4.0, 0.4), 3.8, 0.4, Placement.WALL_NEEDING, Movability.FIXED))
+        f.objects.add(Furniture("t1", "wardrobe", Pt(4.0, 3.6), 3.8, 0.4, Placement.WALL_NEEDING, Movability.FIXED))
+
+        val bedBacking = Fixtures.rule("bed_backing", "凶", "bed", "noBacking")
+        val bedInWest = Fixtures.rule("bed_inWest", "平", "bed", "inWest")
+        val solver = RemediationSolver(listOf(bedBacking, bedInWest))
+
+        val plan = solver.solve(f, listOf("bed_backing"))
+
+        // 目标消除（床有靠了），唯一可移墙位在"西"→ 引入平级违规 → 次优+权衡
+        assertTrue(plan.actions.isNotEmpty())
+        assertTrue(!ConditionEvaluator.violated(bedBacking.condition, f))
+        assertTrue(ConditionEvaluator.violated(bedInWest.condition, f))
+        assertTrue(plan.tradeoffNotes.isNotEmpty())
+    }
 }
