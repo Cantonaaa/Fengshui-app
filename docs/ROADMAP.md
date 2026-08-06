@@ -51,6 +51,12 @@
 
 ## 4. 环境与构建（本机）
 
+- **版本管理**：已同步 GitHub `https://github.com/Cantonaaa/Fengshui-app`（main 分支）。
+  - **推送方法**（本机已配置，可直接 `git add/commit/push`）：
+    - `export GIT_EXEC_PATH=/home/aci/.local/libexec/git-core`（每次 shell 需导出，已写入 ~/.bashrc）
+    - github.com 主站 IP 被限 → 已全局配置 `url."https://140.82.112.3/".insteadOf "https://github.com/"` + Host 头 + 该 IP 范围 sslVerify=false
+    - 凭据：`~/.git-credentials`（chmod 600，x-access-token）
+    - 注：仓库远程显示为 https://140.82.112.3/...（即 github.com 的可用 IP）
 - **环境变量**：见 `~/.bashrc`（JAVA_HOME=/home/aci/devtools/jdk-21.0.12+8、ANDROID_HOME=/home/aci/Android/Sdk、gradle 8.9）
 - **镜像**（maven.google.com 被墙，必用）：工程 `settings.gradle.kts` 已配阿里云 google 镜像 + mavenCentral；wrapper 指向腾讯 gradle
 - **构建**：
