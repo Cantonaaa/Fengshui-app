@@ -22,7 +22,8 @@ data class Furniture(
     val dimX: Double,
     val dimZ: Double,
     val placement: Placement,
-    val movability: Movability
+    val movability: Movability,
+    val zhName: String = ""
 ) {
     /** 轴对齐占地矩形（用于占用图/碰撞）。 */
     fun rect(): Pair<Pt, Pt> = Pair(

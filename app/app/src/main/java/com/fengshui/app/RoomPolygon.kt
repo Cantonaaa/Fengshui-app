@@ -1,6 +1,7 @@
 package com.fengshui.app
 
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
 
@@ -95,14 +96,181 @@ object RoomPolygon {
         val keep2 = cullGhost(keep)
         if (keep2.size < 3) return null
 
-        // 4) 形状自适应：近矩形用最小外接矩形（干净四边形），异形用凸包（避免矩形过拟合凹角）
+        // 4) 形状自适应：近矩形用最小外接矩形（干净四边形）；
+        //    有显著内凹（凹形面积 < 凸包 95%，如 L/U 型缺口）用凹多边形；
+        //    否则回退凸包。
         val rect = fitMinAreaRect(keep2)
         val hull = convexHull(keep2)
         val rectArea = polygonArea(rect)
         val hullArea = polygonArea(hull)
-        val shape = if (hullArea > 0f && hullArea / rectArea > 0.85f) rect else hull
+        val concave = concaveFootprint(keep2)
+        val ca = concave?.let { polygonArea(it) } ?: 0f
+        val concaveValid = concave != null && ca >= 0.4f * hullArea && ca <= hullArea * 1.05f && isSimple(concave)
+        val shape = when {
+            hullArea <= 0f || rectArea <= 0f -> hull
+            concaveValid && ca < 0.95f * hullArea -> concave
+            hullArea / rectArea > 0.85f -> rect
+            else -> hull
+        }
         val area = polygonArea(shape)
         return Polygon(shape, area)
+    }
+
+    /**
+     * 正交网格轮廓法：凹多边形重建（保留 L/U 型房间的内凹缺口，不再把缺口拉成斜线/矩形）。
+     * 步骤：点云栅格化 → 膨胀 1 格补缝 → 最大连通域 → Moore 邻域边界追踪 → 去共线。
+     * 输入 XZ 点 [x,z]。房间多为正交结构，天然保留直角内凹；斜墙房呈阶梯状边缘（可接受）。
+     * 失败（网格过大/连通域过小/面积异常/自交）返回 null，由调用方回退凸包。
+     */
+    private fun concaveFootprint(points: List<FloatArray>, cell: Float = 0.2f): List<FloatArray>? {
+        if (points.size < 3) return null
+        val minX = points.minOf { it[0] }; val maxX = points.maxOf { it[0] }
+        val minZ = points.minOf { it[1] }; val maxZ = points.maxOf { it[1] }
+        val gw = ceil((maxX - minX) / cell).toInt() + 1
+        val gh = ceil((maxZ - minZ) / cell).toInt() + 1
+        if (gw > 1024 || gh > 1024 || gw < 2 || gh < 2) return null
+        val occ = Array(gh) { BooleanArray(gw) }
+        for (p in points) {
+            val c = ((p[0] - minX) / cell).toInt().coerceIn(0, gw - 1)
+            val r = ((p[1] - minZ) / cell).toInt().coerceIn(0, gh - 1)
+            occ[r][c] = true
+        }
+
+        // 膨胀 1 格：补齐墙线稀疏采样产生的缝
+        val dil = Array(gh) { BooleanArray(gw) }
+        for (r in 0 until gh) for (c in 0 until gw) {
+            var hit = false
+            for (dr in -1..1) for (dc in -1..1) {
+                val rr = r + dr; val cc = c + dc
+                if (rr in 0 until gh && cc in 0 until gw && occ[rr][cc]) { hit = true; break }
+            }
+            dil[r][c] = hit
+        }
+
+        // 最大连通域（4 邻接），记录最上行最左格作为追踪起点
+        val label = Array(gh) { IntArray(gw) }
+        val q = ArrayDeque<Pair<Int, Int>>()
+        var comp = 0
+        var mainComp = 0
+        var mainCells = 0
+        var startCell: Pair<Int, Int>? = null
+        for (r in 0 until gh) for (c in 0 until gw) {
+            if (!dil[r][c] || label[r][c] != 0) continue
+            comp++
+            var size = 0
+            var topmost: Pair<Int, Int>? = null
+            label[r][c] = comp
+            q.add(r to c)
+            while (q.isNotEmpty()) {
+                val (rr, cc) = q.removeFirst()
+                size++
+                if (topmost == null || rr < topmost.first) topmost = rr to cc
+                for ((dr, dc) in listOf(0 to 1, 1 to 0, 0 to -1, -1 to 0)) {
+                    val nr = rr + dr; val nc = cc + dc
+                    if (nr in 0 until gh && nc in 0 until gw && dil[nr][nc] && label[nr][nc] == 0) {
+                        label[nr][nc] = comp
+                        q.add(nr to nc)
+                    }
+                }
+            }
+            if (size > mainCells) { mainCells = size; mainComp = comp; startCell = topmost }
+        }
+        if (mainCells < 4) return null
+        val keep = Array(gh) { r -> BooleanArray(gw) { c -> label[r][c] == mainComp } }
+
+        // Moore 邻域边界追踪（8 邻接），自最上行最左格沿外轮廓走一圈（含内凹缺口）
+        val (b0r, b0c) = startCell ?: return null
+        val boundary = mutableListOf(b0r to b0c)
+        var br = b0r; var bc = b0c
+        var prevR = b0r; var prevC = b0c - 1   // 起点西侧为背景
+        val dirs = listOf(
+            0 to -1, -1 to -1, -1 to 0, -1 to 1, 0 to 1, 1 to 1, 1 to 0, 1 to -1   // 自西顺时针
+        )
+        var guard = 0
+        while (true) {
+            if (++guard > 1_000_000) return null
+            val dirIdx = dirs.indexOf(prevR - br to prevC - bc)
+            if (dirIdx < 0) return null
+            var next: Pair<Int, Int>? = null
+            for (k in 1..8) {
+                val (dr, dc) = dirs[(dirIdx + k) and 7]
+                val nr = br + dr; val nc = bc + dc
+                if (nr in 0 until gh && nc in 0 until gw && keep[nr][nc]) { next = nr to nc; break }
+            }
+            val (nr, nc) = next ?: return null
+            prevR = br; prevC = bc
+            br = nr; bc = nc
+            if (br == b0r && bc == b0c) break
+            boundary.add(br to bc)
+        }
+        if (boundary.size < 4) return null
+
+        // 格 → 世界坐标（格中心，较墙面内缩半格，保证物体在域内）
+        val raw = boundary.map { floatArrayOf(minX + (it.second + 0.5f) * cell, minZ + (it.first + 0.5f) * cell) }
+        return simplifyCollinear(dedupeConsecutive(raw))
+    }
+
+    /** 去连续重复点（首尾相同含其中）。 */
+    private fun dedupeConsecutive(pts: List<FloatArray>): List<FloatArray> {
+        if (pts.size < 2) return pts
+        val out = ArrayList<FloatArray>(pts.size)
+        for (p in pts) {
+            val last = out.lastOrNull()
+            if (last != null && last[0] == p[0] && last[1] == p[1]) continue
+            out.add(p)
+        }
+        if (out.size >= 2) {
+            val f = out.first(); val l = out.last()
+            if (f[0] == l[0] && f[1] == l[1]) out.removeAt(out.size - 1)
+        }
+        return out
+    }
+
+    /** 去共线点（相邻三点叉积≈0 则删中间点，迭代至稳定）。 */
+    private fun simplifyCollinear(pts: List<FloatArray>): List<FloatArray> {
+        var cur = pts
+        while (cur.size >= 3) {
+            var changed = false
+            val out = ArrayList<FloatArray>(cur.size)
+            val n = cur.size
+            for (i in 0 until n) {
+                val a = cur[(i - 1 + n) % n]; val b = cur[i]; val c = cur[(i + 1) % n]
+                val cross = (b[0]-a[0])*(c[1]-b[1]) - (b[1]-a[1])*(c[0]-b[0])
+                if (Math.abs(cross) < 1e-6f) { changed = true; continue }
+                out.add(b)
+            }
+            if (!changed || out.size < 3) break
+            cur = out
+        }
+        return cur
+    }
+
+    /** 简单多边形判定（非相邻边不相交）。 */
+    private fun isSimple(p: List<FloatArray>): Boolean {
+        val n = p.size
+        if (n < 3) return false
+        for (i in 0 until n) {
+            val a1 = p[i]; val a2 = p[(i + 1) % n]
+            for (j in i + 1 until n) {
+                if (j == i || (j + 1) % n == i || (i + 1) % n == j) continue
+                val b1 = p[j]; val b2 = p[(j + 1) % n]
+                if (segmentsIntersect(a1, a2, b1, b2)) return false
+            }
+        }
+        return true
+    }
+
+    /** 线段相交判定（含共享端点不计）。 */
+    private fun segmentsIntersect(a1: FloatArray, a2: FloatArray, b1: FloatArray, b2: FloatArray): Boolean {
+        fun orient(p: FloatArray, q: FloatArray, r: FloatArray): Float =
+            (q[0]-p[0])*(r[1]-p[1]) - (q[1]-p[1])*(r[0]-p[0])
+        fun onSeg(p: FloatArray, a: FloatArray, b: FloatArray): Boolean =
+            p[0] in minOf(a[0], b[0])..maxOf(a[0], b[0]) && p[1] in minOf(a[1], b[1])..maxOf(a[1], b[1])
+        val o1 = orient(a1, a2, b1); val o2 = orient(a1, a2, b2)
+        val o3 = orient(b1, b2, a1); val o4 = orient(b1, b2, a2)
+        if (((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) && ((o3 > 0 && o4 < 0) || (o3 < 0 && o4 > 0))) return true
+        return (o1 == 0f && onSeg(b1, a1, a2)) || (o2 == 0f && onSeg(b2, a1, a2)) ||
+               (o3 == 0f && onSeg(a1, b1, b2)) || (o4 == 0f && onSeg(a2, b1, b2))
     }
 
     /**

@@ -28,8 +28,9 @@ class YOLOWorldNcnn(private val context: Context) {
     }
 
     private val vocab = listOf(
-        "bed", "sofa", "dining table", "refrigerator", "potted plant", "toilet",
-        "wardrobe", "door", "window", "stove", "pillar", "desk", "front desk"
+        "bed", "sofa", "dining table", "refrigerator", "potted plant",
+        "wardrobe", "door", "window", "stove", "pillar", "desk", "front desk",
+        "water", "shrine", "bookshelf", "safe", "book"
     )
 
     var isReady: Boolean = false

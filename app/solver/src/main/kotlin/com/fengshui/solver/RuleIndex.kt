@@ -2,16 +2,18 @@ package com.fengshui.solver
 
 import org.json.JSONObject
 
-/** 一条规则（ID + 条件）。 */
+/** 一条规则（ID + 严重度 + 中文标题 + 条件）。 */
 data class Rule(
     val id: String,
     val severity: String,
+    val title: String,
     val condition: RuleCondition
 ) {
     companion object {
         fun fromJson(o: JSONObject): Rule = Rule(
             id = o.getString("ruleId"),
             severity = o.optString("severity", "平"),
+            title = o.optString("title", ""),
             condition = RuleCondition.fromJson(o.optJSONObject("condition") ?: JSONObject())
         )
     }

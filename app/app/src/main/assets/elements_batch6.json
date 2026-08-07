@@ -1,0 +1,210 @@
+[
+  {
+    "ruleId": "wtr_sheng_01",
+    "title": "水缸（水）宜得生之方（金方生水·北方水比和）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "water": 1 }, "spatial": { "water": ["sectorGeneratesObject"] } },
+    "finding": {
+      "summary": "水缸属水，得生之方为金（西、西北，金生水）与水（北，比和）。水得生则财气不散，水缸管财。",
+      "remedy": ["水缸宜置于西、西北（金生水）或北（水比和）方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生忌相冲，水缸得金方生之则吉。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "wtr_ke_01",
+    "title": "水缸（水）忌安土方（土克水）",
+    "severity": "凶",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "water": 1 }, "spatial": { "water": ["elementClashWithSector"] } },
+    "finding": {
+      "summary": "水缸属水，忌在土方（东北、西南）受土所克，主财气受阻。",
+      "remedy": ["水缸移至西、西北或北，避东北/西南土方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行忌相冲，水缸忌土克水之方。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "wtr_jiji_01",
+    "title": "水火既济（水缸近灶为吉）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "water": 1, "stove": 1 }, "spatial": { "water": ["nearStove"] } },
+    "finding": {
+      "summary": "水缸对中锅为水火既济，灶管人丁，水缸管财，水火相济则家宅和顺。",
+      "remedy": ["水缸置于灶旁，取水火既济之象"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_06", "original": "水缸對中鍋，為水火既濟", "modern": "水缸对中锅为水火既济，吉。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "shen_sheng_01",
+    "title": "神位（火）宜得木方生（东·东南木生火）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "shrine": 1 }, "spatial": { "shrine": ["sectorGeneratesObject"] } },
+    "finding": {
+      "summary": "神位香火属火，得木方（东、东南）生之则香火绵延，家宅安泰。",
+      "remedy": ["神位宜置于东、东南木方，忌北水方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生，神位火得木方生之则吉。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "shen_ke_01",
+    "title": "神位（火）忌安水方（北水克火）",
+    "severity": "凶",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "shrine": 1 }, "spatial": { "shrine": ["elementClashWithSector"] } },
+    "finding": {
+      "summary": "神位属火，忌在北方坎水受水所克，主人口不利、香火受抑。",
+      "remedy": ["神位移至东、东南木方，避北方水方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "神室", "quoteKey": "zfj_shen_01", "original": "神位香火，不可安在關方煞方，及門之左右", "modern": "神位香火宜安生旺得生之方。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "study_sheng_01",
+    "title": "柜架·书室（木）宜得水方生（北水生木）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "study": 1 }, "spatial": { "study": ["sectorGeneratesObject"] } },
+    "finding": {
+      "summary": "书室/文昌属木，得水方（北）生之则文思畅达；东、东南木方比和亦宜。",
+      "remedy": ["书柜书桌宜置于北（水生木）或东、东南木方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生，书室木得水方生之则吉。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "study_ke_01",
+    "title": "柜架·书室（木）忌安金方（西·西北金克木）",
+    "severity": "凶",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "study": 1 }, "spatial": { "study": ["elementClashWithSector"] } },
+    "finding": {
+      "summary": "书室属木，忌在西方、西北金方受金所克，主文思受阻、学业不利。",
+      "remedy": ["书柜书桌移至北或东、东南，避西/西北金方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行忌相冲，书室木忌金克之方。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "fin_sheng_01",
+    "title": "库房·财务（金）宜得土方生（东北·西南土生金）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "finance_room": 1 }, "spatial": { "finance_room": ["sectorGeneratesObject"] } },
+    "finding": {
+      "summary": "库房属金，得土方（东北、西南）生之则财库丰盈；西、西北金方比和亦宜。",
+      "remedy": ["保险柜/库房宜置于东北、西南（土生金）或西、西北金方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "衙署", "quoteKey": "zfj_ys_05", "original": "庫房，宜兌及乾艮方，不宜震巽離方", "modern": "库房宜兑（西）乾（西北）艮（东北）方，不宜震巽离方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "fin_ke_01",
+    "title": "库房·财务（金）忌安火方（南火克金）",
+    "severity": "凶",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "finance_room": 1 }, "spatial": { "finance_room": ["elementClashWithSector"] } },
+    "finding": {
+      "summary": "库房属金，忌在南方离火受火所克，主财帛耗损。",
+      "remedy": ["保险柜/库房移至东北、西南或西、西北，避南方火方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "衙署", "quoteKey": "zfj_ys_05", "original": "庫房，宜兌及乾艮方，不宜震巽離方", "modern": "库房不宜震巽离方，离火克金，忌之。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "cash_sheng_01",
+    "title": "收银（金）宜得土方生（东北·西南土生金）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "cashier": 1 }, "spatial": { "cashier": ["sectorGeneratesObject"] } },
+    "finding": {
+      "summary": "收银属金，得土方（东北、西南）生之则财源广进；西、西北金方比和亦宜。",
+      "remedy": ["收银台宜置于东北、西南（土生金）或西、西北金方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生，收银金得土方生之则吉。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "cash_ke_01",
+    "title": "收银（金）忌安火方（南火克金）",
+    "severity": "凶",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "cashier": 1 }, "spatial": { "cashier": ["elementClashWithSector"] } },
+    "finding": {
+      "summary": "收银属金，忌在南方离火受火所克，主财流受阻。",
+      "remedy": ["收银台移至东北、西南或西、西北，避南方火方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行忌相冲，收银金忌火克之方。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "wtr_jin_01",
+    "title": "金生水（库房·收银金旁水缸水为吉）",
+    "severity": "吉",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "finance_room": 1, "water": 1 }, "spatial": { "water": ["objectGeneratesObject"] } },
+    "finding": {
+      "summary": "金生水，库房（金）邻近水缸（水）为相生之吉，财水相滋，财气不竭。",
+      "remedy": ["保险柜/库房旁置水缸，取金生水之吉"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生，金生水则吉。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "shen_shui_01",
+    "title": "水克火（神位火忌邻近水缸水）",
+    "severity": "凶",
+    "schools": ["五行"],
+    "category": "furniture",
+    "status": "active",
+    "condition": { "require": { "shrine": 1, "water": 1 }, "spatial": { "shrine": ["objectClashesObject"] } },
+    "finding": {
+      "summary": "神位属火，邻近水缸（水）为水克火，主香火受抑、家宅不利。",
+      "remedy": ["神位远离水缸，忌水火相冲于神位之侧"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "神室", "quoteKey": "zfj_shen_01", "original": "神位香火，不可安在關方煞方，及門之左右", "modern": "神位香火忌安不当之位，水火相冲不利。", "reliability": "推演引申" }
+    ]
+  }
+]

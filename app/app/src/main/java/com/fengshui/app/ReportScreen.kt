@@ -8,31 +8,64 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/** 报告页：命卦 / 北向 / 物体卦位 / 命中规则（原文依据）+ 整改建议。 */
+/**
+ * 报告页：命卦 / 北向 / 物体卦位 / 命中规则（原文依据）+ 整改建议。
+ * @param result       本次（或历史）分析结果；null 显示空态引导
+ * @param northAngle   分析时所用北向（历史查看时用存档值，保证宫位图朝向一致）
+ * @param sceneKey     居所类别键（历史查看时用存档场景，保证相关度排序一致）
+ * @param onSaveHistory 非 null 时显示「存入历史」按钮；历史查看传 null 隐藏
+ */
 @Composable
-fun ReportScreen(onBack: () -> Unit) {
-    val result = AppState.analysisResult
+fun ReportScreen(
+    result: AnalysisResult?,
+    northAngle: Double,
+    sceneKey: String,
+    onBack: () -> Unit,
+    onSaveHistory: (() -> Unit)? = null
+) {
+    var saved by remember(result) { mutableStateOf(false) }
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
+            modifier = Modifier.fillMaxSize().safeContentPadding().verticalScroll(rememberScrollState()).padding(16.dp)
         ) {
             Text("堪舆批语", style = MaterialTheme.typography.headlineMedium)
+            if (onSaveHistory != null) {
+                if (saved) {
+                    Text(
+                        "已存入历史",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                } else {
+                    Button(
+                        onClick = { onSaveHistory(); saved = true },
+                        modifier = Modifier.padding(top = 6.dp)
+                    ) { Text("存入历史") }
+                }
+            }
             if (result == null) {
                 Text(
                     "尚无批语。请先在首页定生辰、起命卦 → 入宅勘察（定向正盘）→ 勘毕起批。",
@@ -50,7 +83,7 @@ fun ReportScreen(onBack: () -> Unit) {
                     BaguaMapView(
                         polygon = result.polygon,
                         objects = result.objects,
-                        northAngle = AppState.northAngle ?: 0.0,
+                        northAngle = northAngle,
                         gua = result.gua,
                         plan = result.plan,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
@@ -67,7 +100,7 @@ fun ReportScreen(onBack: () -> Unit) {
                     Section("命卦", Color(0xFF2E7D32)) {
                         Text(gua.summary, style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "居所类别：${AppState.sceneName()}",
+                            "居所类别：${AppState.sceneName(sceneKey)}",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
@@ -93,7 +126,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 if (result.badHits.isNotEmpty()) {
                     Section("凶煞与化解（${result.badHits.size}）", Color(0xFFC0392B)) {
                         result.badHits.sortedWith(
-                            compareByDescending<RuleCard> { sceneRelevance(it) }
+                            compareByDescending<RuleCard> { sceneRelevance(it, sceneKey) }
                                 .thenByDescending { sevRank(it.severity) }
                         ).forEach { hit -> RuleCardView(hit) }
                     }
@@ -102,7 +135,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 if (result.goodHits.isNotEmpty()) {
                     Section("吉象（${result.goodHits.size}）", Color(0xFF2E7D32)) {
                         result.goodHits.sortedWith(
-                            compareByDescending<RuleCard> { sceneRelevance(it) }
+                            compareByDescending<RuleCard> { sceneRelevance(it, sceneKey) }
                                 .thenByDescending { sevRank(it.severity) }
                         ).forEach { hit -> RuleCardView(hit) }
                     }
@@ -127,8 +160,11 @@ fun ReportScreen(onBack: () -> Unit) {
                                 plan.tradeoffNotes.forEach { Text("・$it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp)) }
                             }
                             if (plan.remainingViolations.isNotEmpty()) {
+                                val titleOf: (String) -> String = { id ->
+                                    result.hits.firstOrNull { it.id == id }?.title?.ifEmpty { id } ?: id
+                                }
                                 Text(
-                                    "仍有 ${plan.remainingViolations.size} 项未化解（${plan.remainingViolations.joinToString(",")}），宜以遮挡或改造之法待之",
+                                    "仍有 ${plan.remainingViolations.size} 项未化解（${plan.remainingViolations.map(titleOf).joinToString("、")}），宜以遮挡或改造之法待之",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -179,8 +215,8 @@ private fun sevColor(s: String): Color = when (s) {
 }
 
 /** 命中与当前场景的相关度（require 命中场景偏好类型数）。 */
-private fun sceneRelevance(hit: RuleCard): Int =
-    hit.condition.require.count { it in AppState.sceneTypes() }
+private fun sceneRelevance(hit: RuleCard, sceneKey: String): Int =
+    hit.condition.require.count { it in AppState.sceneTypes(sceneKey) }
 
 @Composable
 private fun Section(title: String, tint: Color, content: @Composable () -> Unit) {

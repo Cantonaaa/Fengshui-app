@@ -127,13 +127,19 @@ object AppState {
     }
 
     /** 场景显示名。 */
-    fun sceneName(): String = when (scene) {
+    fun sceneName(): String = sceneName(scene)
+
+    /** 场景显示名（按场景键）。 */
+    fun sceneName(key: String): String = when (key) {
         "living" -> "客厅"; "kitchen" -> "厨房"; "study" -> "书房"
         "office" -> "办公室"; else -> "卧室"
     }
 
     /** 场景偏好的物体类型（报告排序用）。 */
-    fun sceneTypes(): Set<String> = when (scene) {
+    fun sceneTypes(): Set<String> = sceneTypes(scene)
+
+    /** 场景偏好的物体类型（按场景键）。 */
+    fun sceneTypes(key: String): Set<String> = when (key) {
         "living" -> setOf("sofa", "dining", "fridge")
         "kitchen" -> setOf("stove", "fridge", "dining")
         "study" -> setOf("desk", "study")

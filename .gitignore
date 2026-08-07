@@ -52,3 +52,20 @@ scripts/*.py.pt
 scripts/*py_pnnx.py
 scripts/*py_ncnn.py
 scripts/__pycache__/
+
+# 模型重导中间产物（scripts 下的大文件不入库）
+scripts/yolov8l-worldv2.pt
+scripts/yolov8l-worldv2.torchscript
+scripts/yolov8l-worldv2.onnx
+scripts/yolov8l-worldv2.pnnx.*
+scripts/yolov8l-worldv2.ncnn.*
+scripts/yolov8l-worldv2_pnnx.py
+scripts/yolov8l-worldv2_ncnn.py
+scripts/yolov8l-worldv2_patched*
+scripts/yolov8l_world_v2_960.onnx
+scripts/yolov8l_world_v2_960.pt
+scripts/weights/
+scripts/test_imgs/
+scripts/debug*
+scripts/pnnx/
+app/app/src/main/assets/yolo_world.bin

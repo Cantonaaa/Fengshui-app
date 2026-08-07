@@ -289,15 +289,15 @@
   },
   {
     "ruleId": "zfj_men_01",
-    "title": "宅内门不宜多·不宜高过壁",
+    "title": "宅内门不宜多（忌杂乱开门）",
     "severity": "凶",
     "schools": ["形法"],
     "category": "door",
     "status": "active",
-    "condition": { "require": { "door": 1 }, "spatial": { "room": ["tooManyDoors"], "door": ["higherThanWall"] } },
+    "condition": { "require": { "door": 1 }, "spatial": { "door": ["tooManyDoors"] } },
     "finding": {
-      "summary": "宅内门不宜多，门不宜高过墙壁，尤忌杂乱开门，否则气散不聚。",
-      "remedy": ["减少不必要的门扇", "门高与墙协调，忌杂乱开多门"]
+      "summary": "宅内门不宜多，尤忌杂乱开门，否则气散不聚。",
+      "remedy": ["减少不必要的门扇"]
     },
     "evidence": [
       { "book": "宅法举隅", "chapter": "下册·門戶", "quoteKey": "zfj_men_01", "original": "宅內，門不宜多，門不宜高過於壁，尤忌雜亂開門，氣散不聚", "modern": "宅内门不宜多，门不宜高过墙壁，尤忌杂乱开门，致气散不聚。", "reliability": "直接明确" }

@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.unit.dp
 import com.fengshui.solver.Pt
 import com.fengshui.solver.RemediationPlan
@@ -79,67 +80,74 @@ fun BaguaMapView(
         fun toScreen(p: Pair<Double, Double>): Offset =
             Offset(cx + (p.first * scale).toFloat(), cy - (p.second * scale).toFloat())
 
-        // 1) 八卦宫位扇形
-        for (i in BaguaMap.SECTORS.indices) {
-            val sector = BaguaMap.SECTORS[i]
-            val color = when {
-                sector in good -> Color(0x40, 0xCC, 0x60, 0x45)
-                sector in bad -> Color(0xE0, 0x50, 0x40, 0x40)
-                else -> Color(0xCC, 0xCC, 0xCC, 0x25)
-            }
-            val start = 270f + i * 45f - 22.5f   // 北在顶部，顺时针
-            drawArc(
-                color = color,
-                startAngle = start,
-                sweepAngle = 45f,
-                useCenter = true,
-                topLeft = Offset(cx - maxR * scale, cy - maxR * scale),
-                size = Size(maxR * scale * 2f, maxR * scale * 2f)
-            )
-        }
-
-        // 2) 房间多边形
+        // 房间多边形路径（先构建，供裁剪与描边）
+        val polyPath = Path()
         if (projPoly.size >= 3) {
-            val path = Path()
-            path.moveTo(toScreen(projPoly[0]).x, toScreen(projPoly[0]).y)
-            for (i in 1 until projPoly.size) path.lineTo(toScreen(projPoly[i]).x, toScreen(projPoly[i]).y)
-            path.close()
-            drawPath(path, Color.Transparent, style = Stroke(width = 3f))
-            drawPath(path, Color(0x2A, 0x2A, 0x2A, 0x0D))
+            polyPath.moveTo(toScreen(projPoly[0]).x, toScreen(projPoly[0]).y)
+            for (i in 1 until projPoly.size) polyPath.lineTo(toScreen(projPoly[i]).x, toScreen(projPoly[i]).y)
+            polyPath.close()
         }
 
-        // 3) 中心
-        drawCircle(Color(0x88, 0x88, 0x88), radius = 3f, center = Offset(cx, cy))
-
-        // 4) 物体点位
-        for (o in objects) {
-            val p = BaguaMap.project(Pt(o.x, o.z), center, northAngle)
-            val pos = toScreen(p)
-            val c = when {
-                o.sector in bad -> Color(0xD0, 0x30, 0x20)
-                o.sector in good -> Color(0x20, 0x90, 0x40)
-                else -> Color(0x88, 0x88, 0x88)
+        // 房间内的内容整体裁剪进多边形（八卦扇区/中心/物体/整改箭头不越墙）
+        clipPath(polyPath) {
+            // 1) 八卦宫位扇形
+            for (i in BaguaMap.SECTORS.indices) {
+                val sector = BaguaMap.SECTORS[i]
+                val color = when {
+                    sector in good -> Color(0x40, 0xCC, 0x60, 0x45)
+                    sector in bad -> Color(0xE0, 0x50, 0x40, 0x40)
+                    else -> Color(0xCC, 0xCC, 0xCC, 0x25)
+                }
+                val start = 270f + i * 45f - 22.5f   // 北在顶部，顺时针
+                drawArc(
+                    color = color,
+                    startAngle = start,
+                    sweepAngle = 45f,
+                    useCenter = true,
+                    topLeft = Offset(cx - maxR * scale, cy - maxR * scale),
+                    size = Size(maxR * scale * 2f, maxR * scale * 2f)
+                )
             }
-            drawCircle(c, radius = 7f, center = pos)
-            drawCircle(Color.White, radius = 3f, center = pos)
+
+            // 3) 中心
+            drawCircle(Color(0x88, 0x88, 0x88), radius = 3f, center = Offset(cx, cy))
+
+            // 4) 物体点位
+            for (o in objects) {
+                val p = BaguaMap.project(Pt(o.x, o.z), center, northAngle)
+                val pos = toScreen(p)
+                val c = when {
+                    o.sector in bad -> Color(0xD0, 0x30, 0x20)
+                    o.sector in good -> Color(0x20, 0x90, 0x40)
+                    else -> Color(0x88, 0x88, 0x88)
+                }
+                drawCircle(c, radius = 7f, center = pos)
+                drawCircle(Color.White, radius = 3f, center = pos)
+            }
+
+            // 5) 整改目标（虚线圈 + 箭头 当前→目标）
+            plan?.actions?.forEach { act ->
+                val obj = objects.firstOrNull { it.id == act.objectId } ?: return@forEach
+                val from = toScreen(BaguaMap.project(Pt(obj.x, obj.z), center, northAngle))
+                val to = toScreen(BaguaMap.project(act.toPosition, center, northAngle))
+                val c = Color(0x10, 0x60, 0xC0)
+                drawCircle(
+                    color = c, radius = 9f, center = to,
+                    style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f)))
+                )
+                drawLine(c, from, to, strokeWidth = 2f)
+                val ang = Math.atan2((to.y - from.y).toDouble(), (to.x - from.x).toDouble())
+                val ah = 9f
+                val dx = Math.cos(ang).toFloat(); val dy = Math.sin(ang).toFloat()
+                drawLine(c, to, Offset(to.x - dx * ah + dy * ah * 0.5f, to.y - dy * ah - dx * ah * 0.5f), strokeWidth = 2f)
+                drawLine(c, to, Offset(to.x - dx * ah - dy * ah * 0.5f, to.y - dy * ah + dx * ah * 0.5f), strokeWidth = 2f)
+            }
         }
 
-        // 5) 整改目标（虚线圈 + 箭头 当前→目标）
-        plan?.actions?.forEach { act ->
-            val obj = objects.firstOrNull { it.id == act.objectId } ?: return@forEach
-            val from = toScreen(BaguaMap.project(Pt(obj.x, obj.z), center, northAngle))
-            val to = toScreen(BaguaMap.project(act.toPosition, center, northAngle))
-            val c = Color(0x10, 0x60, 0xC0)
-            drawCircle(
-                color = c, radius = 9f, center = to,
-                style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f)))
-            )
-            drawLine(c, from, to, strokeWidth = 2f)
-            val ang = Math.atan2((to.y - from.y).toDouble(), (to.x - from.x).toDouble())
-            val ah = 9f
-            val dx = Math.cos(ang).toFloat(); val dy = Math.sin(ang).toFloat()
-            drawLine(c, to, Offset(to.x - dx * ah + dy * ah * 0.5f, to.y - dy * ah - dx * ah * 0.5f), strokeWidth = 2f)
-            drawLine(c, to, Offset(to.x - dx * ah - dy * ah * 0.5f, to.y - dy * ah + dx * ah * 0.5f), strokeWidth = 2f)
+        // 2) 房间轮廓：可见深棕描边 + 微填充
+        if (projPoly.size >= 3) {
+            drawPath(polyPath, Color(0xFF5A4632), style = Stroke(width = 3f))
+            drawPath(polyPath, Color(0xFF5A4632).copy(alpha = 0.07f))
         }
     }
 }

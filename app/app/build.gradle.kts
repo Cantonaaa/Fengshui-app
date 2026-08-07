@@ -21,8 +21,8 @@ android {
         applicationId = "com.fengshui.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.1.1"
 
         externalNativeBuild {
             cmake {
@@ -70,6 +70,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // release APK 文件名带版本号（fengshui-1.1.0.apk）
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            if (variant.buildType.name == "release") {
+                (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                    .outputFileName = "fengshui-${variant.versionName}.apk"
+            }
+        }
     }
 
     externalNativeBuild {

@@ -78,8 +78,9 @@ private val TYPE_NAME_ZH = mapOf(
     "bed" to "床", "sofa" to "沙发", "dining" to "餐桌", "fridge" to "冰箱",
     "plant" to "盆栽", "toilet" to "厕所", "wardrobe" to "衣柜", "door" to "门",
     "window" to "窗", "stove" to "灶", "pillar" to "柱", "desk" to "书桌",
-    "front_desk" to "前台", "study" to "书房", "office_area" to "办公区",
-    "finance_room" to "财务室", "storage" to "储物", "cashier" to "收银"
+    "front_desk" to "前台", "study" to "书房·柜架", "office_area" to "办公区",
+    "finance_room" to "财务室", "storage" to "储物", "cashier" to "收银",
+    "water" to "水缸", "shrine" to "神位"
 )
 
 /** 物体类型中文名。 */
@@ -91,12 +92,42 @@ private val DIMS = mapOf(
     "fridge" to (0.7 to 0.7), "plant" to (0.4 to 0.4), "toilet" to (0.4 to 0.6),
     "wardrobe" to (1.6 to 0.6), "door" to (0.9 to 0.06), "window" to (1.2 to 0.06),
     "stove" to (0.7 to 0.6), "pillar" to (0.3 to 0.3), "desk" to (1.2 to 0.6),
-    "front_desk" to (1.5 to 0.6)
+    "front_desk" to (1.5 to 0.6),
+    "water" to (0.4 to 0.4), "shrine" to (0.6 to 0.5), "study" to (1.0 to 0.4),
+    "finance_room" to (0.6 to 0.5)
 )
 
 /** 固定/贴墙属性（灶固定，结构件固定；门窗贴墙）。 */
 private fun isFixed(t: String) = t in setOf("stove", "toilet", "fridge", "door", "window", "pillar", "wardrobe")
-private fun isWallNeeding(t: String) = t !in setOf("plant", "dining", "pillar")
+
+/** 是否贴墙类（背靠墙摆放：床/沙发/柜/灶等；水缸/神位自由摆放）。 */
+fun isWallNeeding(t: String) = t !in setOf("plant", "dining", "pillar", "water", "shrine")
+
+/** 检测名 → 规则类型（规范化）。 */
+fun canonicalType(detectionType: String): String = TYPE_MAP[detectionType] ?: detectionType
+
+/** 物体类型 → 典型高度（米），用于"部分检测帧"过滤（高度一致性）。 */
+fun typicalHeight(t: String): Double = when (canonicalType(t)) {
+    "bed" -> 0.55; "sofa" -> 0.85; "dining" -> 0.75; "fridge" -> 1.8; "plant" -> 1.0
+    "toilet" -> 0.4; "wardrobe" -> 2.1; "door" -> 2.0; "window" -> 1.4; "stove" -> 0.85
+    "pillar" -> 2.6; "desk" -> 0.75; "front_desk" -> 1.05
+    "water" -> 1.0; "shrine" -> 1.6; "study" -> 2.0; "finance_room" -> 1.5
+    "bookshelf" -> 2.0; "safe" -> 1.5; "book" -> 0.3
+    else -> 1.2
+}
+
+/**
+ * 高度一致性：检测框估计高与类型典型高相比是否合理。
+ * 过低 = 只框到局部（嵌入式柜/部分遮挡）→ 过滤，防位置/尺寸污染；
+ * 过高 = 异常合并框 → 过滤。无效高度不拦截。
+ */
+fun heightConsistent(estimatedHeight: Double, type: String): Boolean {
+    if (estimatedHeight <= 0.0 || !estimatedHeight.isFinite()) return true
+    val typ = typicalHeight(type)
+    if (typ <= 0.0) return true
+    val lower = if (canonicalType(type) in setOf("pillar", "wardrobe", "door", "window")) 0.3 else 0.45
+    return estimatedHeight >= typ * lower && estimatedHeight <= typ * 1.8
+}
 
 object FactsBuilder {
 
@@ -113,7 +144,8 @@ object FactsBuilder {
                 pos = Pt(o.x, o.z),
                 dimX = dx, dimZ = dz,
                 placement = if (isWallNeeding(type)) Placement.WALL_NEEDING else Placement.FREESTANDING,
-                movability = if (isFixed(type)) Movability.FIXED else Movability.MOVABLE
+                movability = if (isFixed(type)) Movability.FIXED else Movability.MOVABLE,
+                zhName = typeNameZH(type)
             )
         }.toMutableList()
 
@@ -146,7 +178,7 @@ object FactsBuilder {
 }
 
 /** RuleCard → solver.Rule。 */
-fun toSolverRule(c: RuleCard): Rule = Rule(c.id, c.severity, c.condition)
+fun toSolverRule(c: RuleCard): Rule = Rule(c.id, c.severity, c.title, c.condition)
 
 /**
  * 整改求解：对命中的凶/平规则生成整改方案（L1 移动）。
@@ -170,7 +202,7 @@ object RuleEngine {
     private val RULE_FILES = listOf(
         "yszs_batch1.json", "zfj_batch2.json", "zj_batch2b.json",
         "zss_fwl_batch3.json", "furniture_batch4.json", "office_batch5.json",
-        "furniture_l1l4.json"
+        "furniture_l1l4.json", "elements_batch6.json"
     )
 
     /** 纯函数：解析一份规则卡 JSON 文本 → 规则卡列表（含原文/整改）。 */

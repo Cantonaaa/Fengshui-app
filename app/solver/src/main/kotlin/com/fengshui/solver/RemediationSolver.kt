@@ -70,11 +70,11 @@ class RemediationSolver(
                     if (result.tradeoff != null) tradeoffs.add(result.tradeoff)
                 }
                 is FixResult.Blocked -> {
-                    blocked.add("物体 ${s.id}(${s.type}) 移动方案被其他家具占用，需人工移开")
+                    blocked.add("物体 ${s.zhName.ifEmpty { s.type }} 移动方案被其他家具占用，需人工移开")
                     remaining.addAll(group.map { it.id })
                 }
                 is FixResult.NoSolution -> {
-                    tradeoffs.add("物体 ${s.id}(${s.type}) 无合适空位，建议遮挡/改造")
+                    tradeoffs.add("物体 ${s.zhName.ifEmpty { s.type }} 无合适空位，建议遮挡或改造")
                     remaining.addAll(group.map { it.id })
                 }
             }
@@ -137,25 +137,31 @@ class RemediationSolver(
                 bestScore = soft
                 best = p
                 bestDesc = describe(s, p, facts)
-                bestTradeoff = if (perfect) null else "次优方案：消除目标但引入 ${newViolations.joinToString(",")}（severity 较低），可接受或进一步处理"
+                bestTradeoff = if (perfect) null else "次优方案：消除目标但引入 ${newViolations.map { v -> affected.firstOrNull { r -> r.id == v }?.title?.ifEmpty { v } ?: v }.joinToString("、")}（凶势较轻），可接受或进一步处理"
             }
         }
 
         if (best == null) return if (sawBlocked) FixResult.Blocked else FixResult.NoSolution
         s.pos = best
-        return FixResult.Fixed(bestDesc, "满足：${targets.map { it.id }.joinToString(",")} 已消除，无新凶", bestTradeoff)
+        return FixResult.Fixed(bestDesc, "满足：${targets.map { it.title.ifEmpty { it.id } }.joinToString("、")} 已消除，无新凶", bestTradeoff)
     }
 
     /** 优化4：贴墙类的靠墙侧是否落吉方位。 */
     private fun backingSectorGood(facts: RoomFacts, p: Pt, s: Furniture): Boolean {
-        // 靠墙方向 ≈ 从物体中心指向最近墙的法向（反方向为靠背朝向）
-        var nearest: Seg? = null
-        var bestD = Double.MAX_VALUE
+        // 靠墙方向 ≈ 从物体中心指向最近墙的法向（反方向为靠背朝向）。
+        // 选墙评分：近 + 物体宽边(dimX，沿世界X)与墙平行优先，避免靠角误判到垂直侧墙。
+        var best: Seg? = null
+        var bestScore = Double.MAX_VALUE
         for (w in facts.walls) {
             val d = Geo.distPointSegment(p, w)
-            if (d < bestD) { bestD = d; nearest = w }
+            if (d > s.dimZ + 1.0) continue   // 太远不可能是靠背墙
+            val len = Math.hypot(w.b.x - w.a.x, w.b.z - w.a.z)
+            if (len < 1e-9) continue
+            val ux = (w.b.x - w.a.x) / len
+            val score = d - 0.3 * Math.abs(ux)   // 平行X的墙（|ux|≈1）得分更低
+            if (score < bestScore) { bestScore = score; best = w }
         }
-        val w = nearest ?: return false
+        val w = best ?: return false
         // 靠背侧方向 = 物体指向墙的方向（单位法向）
         val dx = p.x - w.a.x; val dz = p.z - w.a.z
         val len = Math.hypot(dx, dz)

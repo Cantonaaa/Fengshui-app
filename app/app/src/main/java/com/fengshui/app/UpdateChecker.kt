@@ -67,14 +67,14 @@ object UpdateChecker {
         return false
     }
 
-    /** 下载 APK 到 app 外部 Download 目录（系统 DownloadManager），返回下载 ID。 */
-    fun download(context: Context, url: String): Long {
+    /** 下载 APK 到 app 外部 Download 目录（系统 DownloadManager），文件名带版本号避免覆盖，返回下载 ID。 */
+    fun download(context: Context, url: String, version: String): Long {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val req = DownloadManager.Request(Uri.parse(url)).apply {
             setTitle("风水堪舆更新")
-            setDescription("正在下载新版本…")
+            setDescription("正在下载 v$version…")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "fengshui-update.apk")
+            setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "fengshui-update-$version.apk")
         }
         return dm.enqueue(req)
     }
@@ -100,10 +100,10 @@ object UpdateChecker {
         }
     }
 
-    /** 下载完成的 APK 文件（外部 Download 目录）。 */
-    fun downloadedFile(context: Context): File? {
+    /** 下载完成的 APK 文件（外部 Download 目录，按版本号命名）。 */
+    fun downloadedFile(context: Context, version: String): File? {
         val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return null
-        val f = File(dir, "fengshui-update.apk")
+        val f = File(dir, "fengshui-update-$version.apk")
         return if (f.exists()) f else null
     }
 

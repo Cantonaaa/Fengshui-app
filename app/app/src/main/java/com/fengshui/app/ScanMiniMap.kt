@@ -53,7 +53,7 @@ object ScanCoverage {
 
 /**
  * 扫描小地图（右下角）：相机朝向上。
- * 亮区 = 关键帧覆盖圆并集（已覆盖），线 = 房间墙线（多边形），蓝点 = 当前位置。
+ * 亮区 = 关键帧覆盖圆并集（已覆盖），线 = 房间墙线（多边形），箭头 = 当前位置与朝向。
  */
 @Composable
 fun MiniMapView(
@@ -103,9 +103,16 @@ fun MiniMapView(
                     path.close()
                     drawPath(path, Color.White, style = Stroke(width = 2f))
                 }
-                // 当前位置
+                // 当前位置（向上箭头 = 相机朝向；地图相机朝上）
                 val cam = toSc(BaguaMap.project(Pt(cameraPos.first, cameraPos.second), center, headingRad))
-                drawCircle(Color(0xFF40C4FF), radius = 5f, center = cam)
+                val arrow = Path().apply {
+                    moveTo(cam.x, cam.y - 10f)
+                    lineTo(cam.x - 5.5f, cam.y + 6f)
+                    lineTo(cam.x + 5.5f, cam.y + 6f)
+                    close()
+                }
+                drawPath(arrow, Color(0xFF40C4FF))
+                drawCircle(Color.White, radius = 2.5f, center = cam)
             }
             Text(
                 "覆盖 $coveragePct%",

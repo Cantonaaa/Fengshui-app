@@ -294,14 +294,18 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                         val poly: List<Pt> = RoomPolygon.buildPolygon(recorder.getPoints())
                                             ?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
                                             ?: FactsBuilder.boundingPolygon(objects)
-                                        val facts = FactsBuilder.build(objects, poly, AppState.northAngle!!)
+                                        // 书柜双验证 + safe→finance_room 归一化（book 作验证器丢弃）
+                                        val canon = PostScanProcessor.canonicalizeScan(objects)
+                                        // C1 墙吸附 + A1 进深测量（贴墙类，多边形确定后）
+                                        val snapped = WallAdjust.apply(canon, poly)
+                                        val facts = FactsBuilder.build(snapped, poly, AppState.northAngle!!)
                                         val rules = RuleEngine.loadRules(context)
                                         val hits = RuleEngine.analyze(facts, rules, gua)
                                         val badHits = hits.filter { it.severity != "吉" }
                                         val plan = solveRemediation(facts, rules, badHits, gua)
-                                        val infos = sectorInfo(objects, poly, AppState.northAngle!!)
+                                        val infos = sectorInfo(snapped, poly, AppState.northAngle!!)
                                         AppState.analysisResult = AnalysisResult(
-                                            gua, true, objects.size, hits, infos, plan, 0, poly
+                                            gua, true, snapped.size, hits, infos, plan, 0, poly
                                         )
                                         withContext(Dispatchers.Main) {
                                             processing = false

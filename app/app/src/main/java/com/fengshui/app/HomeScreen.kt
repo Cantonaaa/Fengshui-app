@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,7 +43,8 @@ import kotlinx.coroutines.withContext
 fun HomeScreen(
     onStartScan: () -> Unit,
     onSetBirth: () -> Unit,
-    onViewReport: () -> Unit
+    onViewReport: () -> Unit,
+    onViewHistory: () -> Unit
 ) {
     val context = LocalContext.current
     var scene by remember { mutableStateOf(AppState.scene) }
@@ -70,7 +72,7 @@ fun HomeScreen(
         downloading = true
         updateMsg = "下载中…"
         scope.launch(Dispatchers.IO) {
-            val id = UpdateChecker.download(context, info.apkUrl)
+            val id = UpdateChecker.download(context, info.apkUrl, info.version)
             while (true) {
                 kotlinx.coroutines.delay(1000)
                 val p = UpdateChecker.downloadProgress(context, id)
@@ -78,7 +80,7 @@ fun HomeScreen(
                     when {
                         p >= 100 -> {
                             downloading = false
-                            val f = UpdateChecker.downloadedFile(context)
+                            val f = UpdateChecker.downloadedFile(context, info.version)
                             if (f != null) {
                                 if (UpdateChecker.install(context, f)) updateMsg = "更新包已下载，请按系统提示安装"
                                 else { updateMsg = "需开启「安装未知应用」权限"; UpdateChecker.openInstallPermissionSettings(context) }
@@ -97,6 +99,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .safeContentPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -209,6 +212,12 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 10.dp),
                 shape = RoundedCornerShape(12.dp)
             ) { Text("观阅批语") }
+
+            OutlinedButton(
+                onClick = onViewHistory,
+                modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 10.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) { Text("历史记录") }
 
             Text(
                 "生辰与本机诸事，谨藏于内，绝不上传",

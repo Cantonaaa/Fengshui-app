@@ -21,7 +21,7 @@ object Fixtures {
         val cond = org.json.JSONObject()
             .put("require", org.json.JSONObject().put(require, 1))
             .put("spatial", org.json.JSONObject().put(require, org.json.JSONArray().put(spatial)))
-        return Rule(id, sev, RuleCondition.fromJson(cond))
+        return Rule(id, sev, "规则-$id", RuleCondition.fromJson(cond))
     }
 }
 
@@ -246,5 +246,147 @@ class ElementClashTest {
         // (2,0.5)=南(火)，水火相冲 → 相克
         val f = factsWith("toilet", Pt(2.0, 0.5))
         assertTrue(ConditionEvaluator.evalFact("elementClashWithSector", f.objects[0], f))
+    }
+}
+
+/** 五行相生（L2 新增）测试。房间 4x4 中心(2,2)，北(2,3.5) 南(2,0.5) 东(3.5,2) 西(0.5,2) 东北(3.5,3.5)。 */
+class ElementShengTest {
+    private fun factsWith(type: String, at: Pt): RoomFacts {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        f.objects.add(Furniture("o1", type, at, 1.0, 1.0, Placement.FREESTANDING, Movability.MOVABLE))
+        return f
+    }
+
+    @Test fun waterInWestMetal_sectorGenerates() {
+        // 水(水缸)在西(金)：金生水 → 得生
+        val f = factsWith("water", Pt(0.5, 2.0))
+        assertTrue(ConditionEvaluator.evalFact("sectorGeneratesObject", f.objects[0], f))
+    }
+    @Test fun waterInEastWood_sectorNotGenerates() {
+        // 水在东(木)：木生火非生水 → 不得生
+        val f = factsWith("water", Pt(3.5, 2.0))
+        assertTrue(!ConditionEvaluator.evalFact("sectorGeneratesObject", f.objects[0], f))
+    }
+    @Test fun shrineInEastWood_sectorGenerates() {
+        // 神位(火)在东(木)：木生火 → 得生
+        val f = factsWith("shrine", Pt(3.5, 2.0))
+        assertTrue(ConditionEvaluator.evalFact("sectorGeneratesObject", f.objects[0], f))
+    }
+    @Test fun studyInNorthWater_sectorGenerates() {
+        // 书室(木)在北(水)：水生木 → 得生
+        val f = factsWith("study", Pt(2.0, 3.5))
+        assertTrue(ConditionEvaluator.evalFact("sectorGeneratesObject", f.objects[0], f))
+    }
+    @Test fun financeRoomInNortheastEarth_sectorGenerates() {
+        // 库房(金)在东北(土)：土生金 → 得生
+        val f = factsWith("finance_room", Pt(3.5, 3.5))
+        assertTrue(ConditionEvaluator.evalFact("sectorGeneratesObject", f.objects[0], f))
+    }
+    @Test fun cashierInNortheastEarth_sectorGenerates() {
+        val f = factsWith("cashier", Pt(3.5, 3.5))
+        assertTrue(ConditionEvaluator.evalFact("sectorGeneratesObject", f.objects[0], f))
+    }
+    @Test fun waterNearFinanceRoom_objectGenerates() {
+        // 金生水：水缸(水)邻近库房(金) → 得生
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        f.objects.add(Furniture("w", "water", Pt(2.0, 2.0), 0.5, 0.5, Placement.FREESTANDING, Movability.MOVABLE))
+        f.objects.add(Furniture("fin", "finance_room", Pt(2.5, 2.5), 1.0, 1.0, Placement.FREESTANDING, Movability.MOVABLE))
+        assertTrue(ConditionEvaluator.evalFact("objectGeneratesObject", f.objects[0], f))
+    }
+    @Test fun shrineNearWater_objectClashes() {
+        // 水克火：神位(火)邻近水缸(水) → 相克
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        f.objects.add(Furniture("s", "shrine", Pt(2.0, 2.0), 0.5, 0.5, Placement.FREESTANDING, Movability.MOVABLE))
+        f.objects.add(Furniture("w", "water", Pt(2.5, 2.5), 0.5, 0.5, Placement.FREESTANDING, Movability.MOVABLE))
+        assertTrue(ConditionEvaluator.evalFact("objectClashesObject", f.objects[0], f))
+    }
+    @Test fun waterNearStove_jiji() {
+        // 水火既济：水缸近灶 → nearStove 触发
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        f.objects.add(Furniture("w", "water", Pt(2.0, 2.0), 0.5, 0.5, Placement.FREESTANDING, Movability.MOVABLE))
+        f.objects.add(Furniture("st", "stove", Pt(2.4, 2.4), 0.8, 0.6, Placement.FREESTANDING, Movability.MOVABLE))
+        assertTrue(ConditionEvaluator.evalFact("nearStove", f.objects[0], f))
+    }
+}
+
+/** 根因C 新增可近似事实测试。 */
+class NewFactsTest {
+    private fun add(f: RoomFacts, id: String, type: String, at: Pt) =
+        f.objects.add(Furniture(id, type, at, 1.0, 1.0, Placement.FREESTANDING, Movability.MOVABLE))
+
+    @Test fun nearBedHead_plantNearBed() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "bed", "bed", Pt(1.0, 1.0)); add(f, "plant", "plant", Pt(2.0, 1.0))
+        assertTrue(ConditionEvaluator.evalFact("nearBedHead", f.objects[1], f))
+    }
+    @Test fun nearBedHead_plantFar_no() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "bed", "bed", Pt(0.5, 0.5)); add(f, "plant", "plant", Pt(3.5, 3.5))
+        assertTrue(!ConditionEvaluator.evalFact("nearBedHead", f.objects[1], f))
+    }
+    @Test fun stoveInFront_bedNearStove() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "bed", "bed", Pt(2.0, 2.0)); add(f, "stove", "stove", Pt(2.5, 2.5))
+        assertTrue(ConditionEvaluator.evalFact("stoveInFront", f.objects[0], f))
+    }
+    @Test fun facingPillar_nearPillar() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "door", "door", Pt(2.0, 2.0)); add(f, "pillar", "pillar", Pt(2.5, 2.5))
+        assertTrue(ConditionEvaluator.evalFact("facesPillar", f.objects[0], f))
+        assertTrue(ConditionEvaluator.evalFact("facingPillar", f.objects[0], f))
+    }
+    @Test fun nearDoorFacts() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "shrine", "shrine", Pt(2.0, 2.0)); add(f, "door", "door", Pt(2.5, 2.5))
+        assertTrue(ConditionEvaluator.evalFact("besideDoor", f.objects[0], f))
+        assertTrue(ConditionEvaluator.evalFact("visibleFromDoor", f.objects[0], f))
+        assertTrue(ConditionEvaluator.evalFact("facesDoorPath", f.objects[0], f))
+        assertTrue(ConditionEvaluator.evalFact("noDraftFromDoor", f.objects[0], f))
+    }
+    @Test fun inBagua_toiletInGoodSector() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "toilet", "toilet", Pt(2.0, 3.5))  // 北 = 吉方
+        assertTrue(ConditionEvaluator.evalFact("inBagua", f.objects[0], f))
+    }
+    @Test fun inBagua_toiletInBadSector_no() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "toilet", "toilet", Pt(2.0, 0.5))  // 南 = 凶方
+        assertTrue(!ConditionEvaluator.evalFact("inBagua", f.objects[0], f))
+    }
+    @Test fun backToDoor_deskBackToDoor() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "desk", "desk", Pt(2.0, 3.5))      // 靠顶墙(z=4)，背向+z
+        add(f, "door", "door", Pt(2.5, 3.8))
+        assertTrue(ConditionEvaluator.evalFact("backToDoor", f.objects[0], f))
+    }
+    @Test fun threeDoorsInLine_true() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "d1", "door", Pt(1.0, 1.0)); add(f, "d2", "door", Pt(2.0, 1.0)); add(f, "d3", "door", Pt(3.0, 1.0))
+        assertTrue(ConditionEvaluator.evalFact("threeDoorsInLine", f.objects[0], f))
+    }
+    @Test fun threeDoorsInLine_notEnough_false() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        add(f, "d1", "door", Pt(1.0, 1.0)); add(f, "d2", "door", Pt(2.0, 1.0))
+        assertTrue(!ConditionEvaluator.evalFact("threeDoorsInLine", f.objects[0], f))
+    }
+    @Test fun tooManyDoors_four() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        for (i in 0..3) add(f, "d$i", "door", Pt(i + 0.5, 0.5))
+        assertTrue(ConditionEvaluator.evalFact("tooManyDoors", f.objects[0], f))
+    }
+    @Test fun tooManyDoors_three_false() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        for (i in 0..2) add(f, "d$i", "door", Pt(i + 0.5, 0.5))
+        assertTrue(!ConditionEvaluator.evalFact("tooManyDoors", f.objects[0], f))
+    }
+    @Test fun men01Condition_violatesWithManyDoors() {
+        val cond = RuleCondition.fromJson(
+            org.json.JSONObject()
+                .put("require", org.json.JSONObject().put("door", 1))
+                .put("spatial", org.json.JSONObject().put("door", org.json.JSONArray().put("tooManyDoors")))
+        )
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        for (i in 0..3) add(f, "d$i", "door", Pt(i + 0.5, 0.5))
+        assertTrue(ConditionEvaluator.violated(cond, f))
     }
 }

@@ -91,4 +91,48 @@ class RoomPolygonTest {
             assert(v[0] >= -0.2f && v[0] <= 4.2f)
         }
     }
+
+    /** 生成 L 型房间点云：上横臂 [0,4]×[2,4] + 左竖臂 [0,2]×[0,4]，缺口 [2,4]×[0,2] 无点。 */
+    private fun makeLScene(): List<FloatArray> {
+        val pts = mutableListOf<FloatArray>()
+        fun inL(x: Float, z: Float): Boolean = (z >= 2f) || (x <= 2f)
+        // 地板：臂内密铺
+        var x = 0f
+        while (x <= 4f) {
+            var z = 0f
+            while (z <= 4f) {
+                if (inL(x, z)) pts.add(floatArrayOf(x, (Math.random() * 0.03).toFloat(), z))
+                z += 0.12f
+            }
+            x += 0.12f
+        }
+        // 墙竖面（含缺口内角两壁），y∈[0.1,2]
+        var y = 0.1f
+        while (y <= 2f) {
+            var xx = 0f
+            while (xx <= 4f) {
+                pts.add(floatArrayOf(xx, y, 0f)); pts.add(floatArrayOf(xx, y, 4f))
+                pts.add(floatArrayOf(2f, y, xx)); pts.add(floatArrayOf(4f, y, xx))  // 内角垂直壁 x=2
+                xx += 0.3f
+            }
+            pts.add(floatArrayOf(0f, y, 0f))
+            y += 0.3f
+        }
+        return pts
+    }
+
+    @Test
+    fun buildPolygon_lShapeKeepsNotch() {
+        val poly = RoomPolygon.buildPolygon(makeLScene())
+        assert(poly != null) { "应能生成 L 型户型" }
+        val area = poly!!.area
+        // L 真面积 12；外接矩形 16。若缺口被拉平（矩形/凸包），面积将接近 16
+        assert(area < 14.5f) { "缺口被填平，面积 $area（>14.5）" }
+        assert(area > 10f) { "面积异常偏小 $area" }
+        // 必须存在内凹角顶点（缺口角 ≈ (2,2)），否则说明缺口被拉成斜线/矩形
+        val hasNotch = poly.vertices.any { v ->
+            abs(v[0] - 2.3f) < 0.7f && abs(v[1] - 2.3f) < 0.7f
+        }
+        assert(hasNotch) { "无内凹角顶点，顶点=${poly.vertices.map { "(${it[0]},${it[1]})" }}" }
+    }
 }

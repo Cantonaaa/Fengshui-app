@@ -10,7 +10,8 @@
 
 static ncnn::Net g_net;
 static bool g_loaded = false;
-static const int TARGET = 640;
+// 模型输入尺寸：yolov8l-worldv2 @ 960（后处理离线批量，时间充裕，取高分辨率提精度）
+static const int TARGET = 960;
 
 struct Object {
     int cls;
@@ -55,7 +56,7 @@ static inline void yuv2rgb(unsigned char y, unsigned char u, unsigned char v,
     b = (unsigned char)(bb < 0 ? 0 : (bb > 255 ? 255 : bb));
 }
 
-// YUV_420_888 平面 -> 640x640 RGB Mat（一步完成 YUV→RGB + 双线性缩放）
+// YUV_420_888 平面 -> TARGETxTARGET RGB Mat（一步完成 YUV→RGB + 双线性缩放）
 static ncnn::Mat yuvToMat(const unsigned char* y, const unsigned char* u, const unsigned char* v,
                           int w, int h, int yRowStride, int uvRowStride, int uvPixelStride) {
     std::vector<unsigned char> rgb(TARGET * TARGET * 3);
