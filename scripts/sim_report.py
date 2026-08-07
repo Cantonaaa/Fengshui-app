@@ -372,42 +372,98 @@ plt.savefig("/tmp/opencode/sim_bagua_map.png", dpi=110)
 plt.close()
 print("已输出 /tmp/opencode/sim_bagua_map.png")
 
-# ---------- 6. 图2：报告 ----------
-fig, ax = plt.subplots(figsize=(8.5, max(9, 2.4+len(bad_hits)*1.15+len(good_hits)*0.14)), dpi=110)
-ax.axis("off")
-y = 1.0
-ax.text(0.01, y, "风水分析报告（模拟）", fontsize=16, fontweight="bold", va="top"); y-=0.05
-ax.text(0.01, y, f"命卦：{GUA_T}命（东四命）· 吉方：{'/'.join(sorted(GOOD))} · 凶方：{'/'.join(sorted(BAD))} · 北向已校准", fontsize=10, va="top", color="#333"); y-=0.05
-ax.text(0.01, y, f"识别物体：{len(objects)}（含未识别 {len(UNK)} 个，不在判断类别内，不计入分析）", fontsize=10, va="top", color="#333"); y-=0.10
+# ---------- 6. 图2：报告（像素坐标 + 行高估算，避免重叠/越界） ----------
+DPI = 110
+W = 8.5 * DPI
+MARGIN_X = 14
+TEXT_W = W - 2 * MARGIN_X
 
-ax.text(0.01, y, f"🔴 凶兆与整改（{len(bad_hits)}）", fontsize=13, fontweight="bold", color="#c02020", va="top"); y-=0.05
+def lines_needed(text, fontsize):
+    cpl = max(1, int(TEXT_W / fontsize))   # CJK 每字≈fontsize 宽（保守）
+    return max(1, math.ceil(len(text) / cpl))
+
+def block_h(lines, fontsize):
+    return lines * fontsize * 1.5
+
+def item_h(it):
+    kind = it[0]
+    if kind == "title": return block_h(1, 16)
+    if kind == "text": return block_h(lines_needed(it[1], it[2]), it[2])
+    if kind == "header": return block_h(1, it[2])
+    if kind == "space": return it[1]
+    if kind == "badcard":
+        _, sev, title, ev, remedy = it
+        h = block_h(lines_needed(f"[{sev}] {title}", 10.5), 10.5)
+        if ev: h += block_h(lines_needed("原文：" + ev, 8.5), 8.5)
+        if remedy: h += block_h(lines_needed(remedy, 9), 9)
+        return h + 16
+    if kind == "goodcard":
+        _, sev, title, ev = it
+        h = block_h(lines_needed(f"[{sev}] {title}", 10), 10)
+        if ev: h += block_h(lines_needed("原文：" + ev, 8), 8)
+        return h + 12
+    return 20
+
+items = []
+items.append(("title", "风水分析报告（模拟）", 16))
+items.append(("text", f"命卦：{GUA_T}命（东四命）· 吉方：{'/'.join(sorted(GOOD))} · 凶方：{'/'.join(sorted(BAD))} · 北向已校准", 10))
+items.append(("text", f"识别物体：{len(objects)}（含未识别 {len(UNK)} 个，不在判断类别内，不计入分析）", 10))
+items.append(("space", 8))
+items.append(("header", f"🔴 凶兆与整改（{len(bad_hits)}）", 13, "#c02020"))
 if not bad_hits:
-    ax.text(0.02, y, "无凶兆", fontsize=10, va="top"); y-=0.04
-for sev,title,remedy,rid,ev in bad_hits:
-    ax.add_patch(mpatches.FancyBboxPatch((0.01,y-0.02),0.98,0.95, boxstyle="round,pad=0.01",
-                  fc="#fdecea", ec="#c02020", lw=1))
-    ax.text(0.03, y, f"[{sev}] {title}", fontsize=10.5, fontweight="bold", va="top")
-    if ev:
-        ax.text(0.03, y-0.40, f"原文：{ev}", fontsize=8.5, va="top", color="#9a5c5c", wrap=True)
-    if remedy:
-        ax.text(0.03, y-0.62, "整改：" + "；".join(remedy), fontsize=9, va="top", color="#7a3c3c", wrap=True)
-    y -= 1.05
-
-y -= 0.1
-ax.text(0.01, y, f"🟢 吉兆（{len(good_hits)}）", fontsize=13, fontweight="bold", color="#1a7a30", va="top"); y-=0.05
+    items.append(("text", "无凶兆", 10))
+for sev, title, remedy, rid, ev in bad_hits:
+    remedy_s = "整改：" + "；".join(remedy) if remedy else ""
+    items.append(("badcard", sev, title, ev, remedy_s))
+items.append(("space", 8))
+items.append(("header", f"🟢 吉兆（{len(good_hits)}）", 13, "#1a7a30"))
 if not good_hits:
-    ax.text(0.02, y, "当前无吉兆触发", fontsize=10, va="top"); y-=0.04
-for sev,title,remedy,rid,ev in good_hits:
-    ax.text(0.02, y, f"[{sev}] {title}", fontsize=10, va="top"); y-=0.05
-    if ev:
-        ax.text(0.04, y, f"原文：{ev}", fontsize=8, va="top", color="#5c7a5c", wrap=True); y-=0.05
+    items.append(("text", "当前无吉兆触发", 10))
+for sev, title, remedy, rid, ev in good_hits:
+    items.append(("goodcard", sev, title, ev))
+items.append(("space", 8))
+items.append(("header", "未识别物体", 12, "#333"))
+items.append(("text", f"{len(UNK)} 个检测未落入判断类别（如椅、凳等），标记为未识别，不计入风水分析；待模型词表扩展后可识别。", 9))
 
-y -= 0.1
-ax.text(0.01, y, "未识别物体", fontsize=12, fontweight="bold", va="top"); y-=0.05
-ax.text(0.02, y, f"{len(UNK)} 个检测未落入判断类别（如椅、凳等），标记为未识别，不计入风水分析；待模型词表扩展后可识别。", fontsize=9, va="top", color="#666")
+H = int(14 + sum(item_h(it) for it in items) + 14)
+fig, ax = plt.subplots(figsize=(W / DPI, H / DPI), dpi=DPI)
+ax.axis("off"); ax.set_xlim(0, W); ax.set_ylim(H, 0)   # y 向下
+y = 14
 
-ax.set_xlim(0,1); ax.set_ylim(y-0.05, 1.02)
-plt.tight_layout()
-plt.savefig("/tmp/opencode/sim_report.png", dpi=110)
+def put(x, text, fontsize, color, bold, lines):
+    global y
+    ax.text(x, y, text, fontsize=fontsize, va="top", color=color,
+            fontweight="bold" if bold else "normal")
+    y += fontsize * 1.5 * lines
+
+for it in items:
+    kind = it[0]
+    if kind == "title":
+        put(MARGIN_X, it[1], it[2], "#000", True, 1)
+    elif kind == "text":
+        put(MARGIN_X, it[1], it[2], "#333", False, lines_needed(it[1], it[2]))
+    elif kind == "header":
+        put(MARGIN_X, it[1], it[2], it[3], True, 1)
+    elif kind == "space":
+        y += it[1]
+    elif kind == "badcard":
+        _, sev, title, ev, remedy = it
+        h = item_h(it)
+        ax.add_patch(mpatches.FancyBboxPatch((MARGIN_X - 4, y - 2), W - 2 * MARGIN_X + 8, h,
+                      boxstyle="round,pad=2", fc="#fdecea", ec="#c02020", lw=1, zorder=0))
+        put(MARGIN_X, f"[{sev}] {title}", 10.5, "#c02020", True, lines_needed(f"[{sev}] {title}", 10.5))
+        if ev: put(MARGIN_X, "原文：" + ev, 8.5, "#9a5c5c", False, lines_needed("原文：" + ev, 8.5))
+        if remedy: put(MARGIN_X, remedy, 9, "#7a3c3c", False, lines_needed(remedy, 9))
+        y += 8
+    elif kind == "goodcard":
+        _, sev, title, ev = it
+        h = item_h(it)
+        ax.add_patch(mpatches.FancyBboxPatch((MARGIN_X - 4, y - 2), W - 2 * MARGIN_X + 8, h,
+                      boxstyle="round,pad=2", fc="#eaf5ea", ec="#1a7a30", lw=1, zorder=0))
+        put(MARGIN_X, f"[{sev}] {title}", 10, "#1a7a30", True, lines_needed(f"[{sev}] {title}", 10))
+        if ev: put(MARGIN_X, "原文：" + ev, 8, "#5c7a5c", False, lines_needed("原文：" + ev, 8))
+        y += 8
+
+plt.savefig("/tmp/opencode/sim_report.png", dpi=DPI)
 plt.close()
 print("已输出 /tmp/opencode/sim_report.png")
