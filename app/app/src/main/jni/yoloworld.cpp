@@ -79,24 +79,24 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeDetect(
     ncnn::Mat out;
     if (ex.extract("out0", out) != 0) return nullptr;
 
-    int nc = out.c;
-    int num_classes = nc - 4;
+    // 输出布局：[h=17行, w=8400列]；行0-3=bbox(cx,cy,w,h)，行4..=各分类分数；无 sigmoid
+    int num_classes = out.h - 4;
     if (num_classes <= 0) return nullptr;
-    int stride = out.w * out.h;
+    int num_boxes = out.w;
 
     std::vector<Object> objects;
-    for (int i = 0; i < stride; i++) {
+    for (int i = 0; i < num_boxes; i++) {
         float max_s = 0.f;
         int best_c = 0;
         for (int c = 0; c < num_classes; c++) {
-            float s = out.channel(4 + c).row(0)[i];
+            float s = out.row(4 + c)[i];
             if (s > max_s) { max_s = s; best_c = c; }
         }
         if (max_s < conf_thr) continue;
-        float x = out.channel(0).row(0)[i];
-        float y = out.channel(1).row(0)[i];
-        float bw = out.channel(2).row(0)[i];
-        float bh = out.channel(3).row(0)[i];
+        float x = out.row(0)[i];
+        float y = out.row(1)[i];
+        float bw = out.row(2)[i];
+        float bh = out.row(3)[i];
         Object o{best_c, max_s, x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2};
         objects.push_back(o);
     }
