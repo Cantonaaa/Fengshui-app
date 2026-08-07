@@ -9,9 +9,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.fengshui.solver.Pt
+import com.fengshui.solver.RemediationPlan
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
@@ -50,13 +52,14 @@ object BaguaMap {
     }
 }
 
-/** 宫位图渲染。objects 带卦位；gua 提供吉凶方。 */
+/** 宫位图渲染。objects 带卦位；gua 提供吉凶方；plan 提供整改移动目标。 */
 @Composable
 fun BaguaMapView(
     polygon: List<Pt>,
     objects: List<ObjInfo>,
     northAngle: Double,
     gua: MingGua.GuaInfo?,
+    plan: RemediationPlan? = null,
     modifier: Modifier = Modifier
 ) {
     val canvasH = 260.dp
@@ -119,6 +122,24 @@ fun BaguaMapView(
             }
             drawCircle(c, radius = 7f, center = pos)
             drawCircle(Color.White, radius = 3f, center = pos)
+        }
+
+        // 5) 整改目标（虚线圈 + 箭头 当前→目标）
+        plan?.actions?.forEach { act ->
+            val obj = objects.firstOrNull { it.id == act.objectId } ?: return@forEach
+            val from = toScreen(BaguaMap.project(Pt(obj.x, obj.z), center, northAngle))
+            val to = toScreen(BaguaMap.project(act.toPosition, center, northAngle))
+            val c = Color(0x10, 0x60, 0xC0)
+            drawCircle(
+                color = c, radius = 9f, center = to,
+                style = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f)))
+            )
+            drawLine(c, from, to, strokeWidth = 2f)
+            val ang = Math.atan2((to.y - from.y).toDouble(), (to.x - from.x).toDouble())
+            val ah = 9f
+            val dx = Math.cos(ang).toFloat(); val dy = Math.sin(ang).toFloat()
+            drawLine(c, to, Offset(to.x - dx * ah + dy * ah * 0.5f, to.y - dy * ah - dx * ah * 0.5f), strokeWidth = 2f)
+            drawLine(c, to, Offset(to.x - dx * ah - dy * ah * 0.5f, to.y - dy * ah + dx * ah * 0.5f), strokeWidth = 2f)
         }
     }
 }

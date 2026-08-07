@@ -23,6 +23,7 @@ object AppState {
     var birthDay: Int? = null
     var birthIsLunar: Boolean = false      // true=农历输入, false=公历输入
     var gender: String? = null          // 男 / 女
+    var scene: String = "bedroom"       // 房间场景：bedroom/living/kitchen/study/office
     var guaInfo: MingGua.GuaInfo? = null
     var northAngle: Double? = null      // sector() 用：世界帧方位 → 磁北 偏移（弧度）
     var baguaJson: String = "{}"        // 缓存 assets/bagua_data.json
@@ -106,6 +107,7 @@ object AppState {
         birthMonth = if (sp.contains("birthMonth")) sp.getInt("birthMonth", 0) else null
         birthDay = if (sp.contains("birthDay")) sp.getInt("birthDay", 0) else null
         birthIsLunar = sp.getBoolean("birthIsLunar", false)
+        scene = sp.getString("scene", "bedroom") ?: "bedroom"
         gender = sp.getString("gender", null)
         northAngle = if (sp.contains("northAngle")) sp.getFloat("northAngle", 0f).toDouble() else null
         refreshGua()
@@ -118,10 +120,26 @@ object AppState {
             if (birthMonth != null) putInt("birthMonth", birthMonth!!) else remove("birthMonth")
             if (birthDay != null) putInt("birthDay", birthDay!!) else remove("birthDay")
             putBoolean("birthIsLunar", birthIsLunar)
+            putString("scene", scene)
             if (gender != null) putString("gender", gender) else remove("gender")
             if (northAngle != null) putFloat("northAngle", northAngle!!.toFloat()) else remove("northAngle")
             apply()
         }
+    }
+
+    /** 场景显示名。 */
+    fun sceneName(): String = when (scene) {
+        "living" -> "客厅"; "kitchen" -> "厨房"; "study" -> "书房"
+        "office" -> "办公室"; else -> "卧室"
+    }
+
+    /** 场景偏好的物体类型（报告排序用）。 */
+    fun sceneTypes(): Set<String> = when (scene) {
+        "living" -> setOf("sofa", "dining", "fridge")
+        "kitchen" -> setOf("stove", "fridge", "dining")
+        "study" -> setOf("desk", "study")
+        "office" -> setOf("desk", "front_desk", "office_area", "finance_room", "storage", "cashier")
+        else -> setOf("bed", "wardrobe")
     }
 
     fun hasBirth(): Boolean =

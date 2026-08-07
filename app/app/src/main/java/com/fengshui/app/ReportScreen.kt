@@ -43,12 +43,20 @@ fun ReportScreen(onBack: () -> Unit) {
                         objects = result.objects,
                         northAngle = AppState.northAngle ?: 0.0,
                         gua = result.gua,
+                        plan = result.plan,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
                 }
                 // 命卦 + 北向
                 result.gua?.let { gua ->
-                    Section("命卦") { Text(gua.summary, style = MaterialTheme.typography.bodyMedium) }
+                    Section("命卦") {
+                        Text(gua.summary, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "房间场景：${AppState.sceneName()}（命中按场景相关性排序）",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
                 Section("北向") {
                     Text(if (result.northSet) "已校准" else "未校准", style = MaterialTheme.typography.bodyMedium)
@@ -74,20 +82,22 @@ fun ReportScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                // 凶/平（需整改）——按严重度排序
+                // 凶/平（需整改）——按场景相关性+严重度排序
                 if (result.badHits.isNotEmpty()) {
                     Section("问题与整改（${result.badHits.size}）") {
-                        result.badHits.sortedByDescending { sevRank(it.severity) }.forEach { hit ->
-                            RuleCardView(hit)
-                        }
+                        result.badHits.sortedWith(
+                            compareByDescending<RuleCard> { sceneRelevance(it) }
+                                .thenByDescending { sevRank(it.severity) }
+                        ).forEach { hit -> RuleCardView(hit) }
                     }
                 }
-                // 吉（正面）——按严重度排序
+                // 吉（正面）——按场景相关性+严重度排序
                 if (result.goodHits.isNotEmpty()) {
                     Section("吉象（${result.goodHits.size}）") {
-                        result.goodHits.sortedByDescending { sevRank(it.severity) }.forEach { hit ->
-                            RuleCardView(hit)
-                        }
+                        result.goodHits.sortedWith(
+                            compareByDescending<RuleCard> { sceneRelevance(it) }
+                                .thenByDescending { sevRank(it.severity) }
+                        ).forEach { hit -> RuleCardView(hit) }
                     }
                 }
                 // 整改方案（L1 移动）
@@ -150,6 +160,10 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 private fun sevRank(s: String): Int = when (s) {
     "大凶" -> 5; "凶" -> 4; "平" -> 3; "吉" -> 2; "大吉" -> 1; else -> 0
 }
+
+/** 命中与当前场景的相关度（require 命中场景偏好类型数）。 */
+private fun sceneRelevance(hit: RuleCard): Int =
+    hit.condition.require.count { it in AppState.sceneTypes() }
 
 @Composable
 private fun RuleCardView(hit: RuleCard) {

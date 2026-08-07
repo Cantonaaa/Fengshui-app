@@ -36,8 +36,8 @@ data class RuleCard(
     val evidence: List<Evidence>
 )
 
-/** 检测物体及所在卦位。 */
-data class ObjInfo(val type: String, val x: Double, val z: Double, val sector: String)
+/** 检测物体及所在卦位。id 与 FactsBuilder 的 Furniture.id（obj$i）对齐。 */
+data class ObjInfo(val id: String, val type: String, val x: Double, val z: Double, val sector: String)
 
 /** 分析结果。 */
 data class AnalysisResult(
@@ -56,10 +56,12 @@ data class AnalysisResult(
 
 /** 物体 → 卦位（配合扇形显示用）。 */
 fun sectorInfo(objects: List<ScanObject>, polygon: List<Pt>, northAngle: Double): List<ObjInfo> {
-    if (polygon.isEmpty()) return objects.map { ObjInfo(TYPE_MAP[it.type] ?: it.type, it.x, it.z, "?") }
+    if (polygon.isEmpty()) return objects.mapIndexed { i, o ->
+        ObjInfo("obj$i", TYPE_MAP[o.type] ?: o.type, o.x, o.z, "?")
+    }
     val center = Pt(polygon.map { it.x }.average(), polygon.map { it.z }.average())
-    return objects.map {
-        ObjInfo(TYPE_MAP[it.type] ?: it.type, it.x, it.z, Geo.sector(Pt(it.x, it.z), center, northAngle))
+    return objects.mapIndexed { i, o ->
+        ObjInfo("obj$i", TYPE_MAP[o.type] ?: o.type, o.x, o.z, Geo.sector(Pt(o.x, o.z), center, northAngle))
     }
 }
 

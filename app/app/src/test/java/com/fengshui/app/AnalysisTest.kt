@@ -84,4 +84,26 @@ class AnalysisTest {
         assert(plan != null) { "应能生成整改方案" }
         assert(plan!!.actions.isNotEmpty()) { "应至少一个移动动作" }
     }
+
+    @Test
+    fun sectorInfo_idsAlignWithFactsBuilder() {
+        val objects = listOf(
+            ScanObject("bed", 0.5, 0.5),
+            ScanObject("stove", 2.5, 2.5)
+        )
+        val poly = listOf(Pt(0.0, 0.0), Pt(4.0, 0.0), Pt(4.0, 4.0), Pt(0.0, 4.0))
+        val facts = FactsBuilder.build(objects, poly, 0.0)
+        val infos = sectorInfo(objects, poly, 0.0)
+        assert(infos.size == 2)
+        for (i in infos.indices) {
+            assert(infos[i].id == facts.objects[i].id) { "ObjInfo.id 应对齐 Furniture.id" }
+        }
+        assert(infos[0].sector == "西南")   // (0.5,0.5) 相对中心(2,2)
+    }
+
+    @Test
+    fun sceneTypes_preferredPerScene() {
+        assert(AppState.sceneTypes().isNotEmpty())
+        assert(AppState.sceneName().isNotBlank())
+    }
 }
