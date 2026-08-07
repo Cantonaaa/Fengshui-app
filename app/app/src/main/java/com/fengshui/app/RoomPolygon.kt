@@ -95,10 +95,45 @@ object RoomPolygon {
         val keep2 = cullGhost(keep)
         if (keep2.size < 3) return null
 
-        // 4) 凸包（Andrew 单调链）
-        val hull = convexHull(keep2)
-        val area = polygonArea(hull)
-        return Polygon(hull, area)
+        // 4) 最小面积外接矩形（长方形房间产出干净四边形；比凸包面积更准）
+        val rect = fitMinAreaRect(keep2)
+        val area = polygonArea(rect)
+        return Polygon(rect, area)
+    }
+
+    /**
+     * 最小面积外接矩形（沿主导方向旋转搜索）。输入/输出均为 XZ 点 [x,z]。
+     * 适合大多数近矩形房间，避免凸包对散点产生的凹凸噪声。
+     */
+    private fun fitMinAreaRect(points: List<FloatArray>): List<FloatArray> {
+        var bestArea = Float.MAX_VALUE
+        var bestCorners: List<FloatArray> = points
+        for (deg in 0 until 90) {
+            val a = Math.toRadians(deg.toDouble())
+            val c = Math.cos(a); val s = Math.sin(a)
+            var minX = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE
+            var minZ = Float.MAX_VALUE; var maxZ = -Float.MAX_VALUE
+            for (p in points) {
+                val xr = (p[0] * c + p[1] * s).toFloat()
+                val zr = (-p[0] * s + p[1] * c).toFloat()
+                if (xr < minX) minX = xr; if (xr > maxX) maxX = xr
+                if (zr < minZ) minZ = zr; if (zr > maxZ) maxZ = zr
+            }
+            val area = (maxX - minX) * (maxZ - minZ)
+            if (area < bestArea) {
+                bestArea = area
+                bestCorners = listOf(
+                    floatArrayOf(minX, minZ), floatArrayOf(maxX, minZ),
+                    floatArrayOf(maxX, maxZ), floatArrayOf(minX, maxZ)
+                ).map { q ->
+                    floatArrayOf(
+                        (q[0] * c - q[1] * s).toFloat(),
+                        (q[0] * s + q[1] * c).toFloat()
+                    )
+                }
+            }
+        }
+        return bestCorners
     }
 
     /**
