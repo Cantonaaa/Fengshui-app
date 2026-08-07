@@ -23,6 +23,8 @@ Thumbs.db
 *.key
 *.pem
 .git-credentials
+keystore/
+keystore.properties
 
 # CMake/NDK 构建产物
 **/.cxx/
