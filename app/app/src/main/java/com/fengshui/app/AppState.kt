@@ -36,35 +36,50 @@ object AppState {
             LunarUtil.lunarYear(birthIsLunar, birthYear!!, birthMonth!!, birthDay!!)
         else null
 
-    /** 合并记录物体：同类型 0.8m 内并入均值，否则新增。跨线程安全。 */
+    // 原始检测缓冲（跨线程追加），分析时聚类成真实物体
+    private val detBuffer = mutableListOf<ScanObject>()
+
+    /**
+     * 缓冲一条检测（不立即合并）。跨线程安全。
+     * 移动扫描中同一物体投影位置漂移大，按"分析时聚类"更稳。
+     */
     @Synchronized
     fun recordObject(type: String, x: Double, z: Double, dimX: Double? = null, dimZ: Double? = null) {
-        val near = scanObjects.firstOrNull {
-            it.type == type && Math.hypot(it.x - x, it.z - z) < 0.8
-        }
-        if (near != null) {
-            val idx = scanObjects.indexOf(near)
-            scanObjects[idx] = ScanObject(
-                type,
-                (near.x + x) / 2,
-                (near.z + z) / 2,
-                avg(near.dimX, dimX),
-                avg(near.dimZ, dimZ)
-            )
-        } else {
-            scanObjects.add(ScanObject(type, x, z, dimX, dimZ))
-        }
+        detBuffer.add(ScanObject(type, x, z, dimX, dimZ))
+        if (detBuffer.size > 6000) detBuffer.removeAt(0)   // 防无限增长
     }
 
-    private fun avg(a: Double?, b: Double?): Double? = when {
-        a != null && b != null -> (a + b) / 2
-        a != null -> a
-        b != null -> b
-        else -> null
-    }
-
+    /** 聚类：同类型 2.5m 内合并取质心；≥3 次检测才计为物体（剔除孤立噪声簇）。 */
     @Synchronized
-    fun snapshotObjects(): List<ScanObject> = scanObjects.toList()
+    fun snapshotObjects(): List<ScanObject> {
+        val result = mutableListOf<ScanObject>()
+        for (type in detBuffer.map { it.type }.distinct()) {
+            val pts = detBuffer.filter { it.type == type }
+            for (cl in greedyCluster(pts, 2.5)) {
+                if (cl.size < 3) continue   // 孤立/稀疏检测不计
+                val cx = cl.map { it.x }.average()
+                val cz = cl.map { it.z }.average()
+                val dx = cl.mapNotNull { it.dimX }.takeIf { it.isNotEmpty() }?.average()
+                val dz = cl.mapNotNull { it.dimZ }.takeIf { it.isNotEmpty() }?.average()
+                result.add(ScanObject(type, cx, cz, dx, dz))
+            }
+        }
+        return result
+    }
+
+    /** 贪心聚类：点与某簇质心距离 ≤ radius 则并入，否则新建簇。 */
+    private fun greedyCluster(pts: List<ScanObject>, radius: Double): List<List<ScanObject>> {
+        val clusters = mutableListOf<MutableList<ScanObject>>()
+        for (p in pts) {
+            val c = clusters.firstOrNull { cl ->
+                val cx = cl.map { it.x }.average()
+                val cz = cl.map { it.z }.average()
+                Math.hypot(p.x - cx, p.z - cz) <= radius
+            }
+            if (c != null) c.add(p) else clusters.add(mutableListOf(p))
+        }
+        return clusters
+    }
 
     fun refreshGua() {
         val ly = effectiveLunarYear()

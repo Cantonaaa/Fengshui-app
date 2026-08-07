@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
@@ -235,7 +237,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
-                    Column(Modifier.padding(12.dp)) {
+                    Column(Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
                         Text(status)
                         Text("缓慢移动手机，环绕房间完整走一圈（A1.2 点云采集）")
                         Button(
