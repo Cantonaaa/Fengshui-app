@@ -13,7 +13,7 @@ class AnalysisTest {
         "ruleId": "t_bed_kill", "title": "床在凶方", "severity": "凶", "status": "active",
         "condition": { "require": { "bed": 1 }, "spatial": { "bed": ["inKillSector"] } },
         "finding": { "summary": "床应避开凶方", "remedy": ["移床"] },
-        "evidence": [ { "book": "宅经", "chapter": "一", "quoteKey": "x", "original": "凶方勿居", "modern": "凶方不宜居" } ]
+        "evidence": [ { "book": "宅经", "chapter": "一", "quoteKey": "x", "original": "凶方勿居", "modern": "凶方不宜居", "reliability": "推演引申" } ]
       },
       {
         "ruleId": "t_uncond", "title": "乘生气通则", "severity": "吉", "status": "active",
@@ -40,6 +40,7 @@ class AnalysisTest {
         assert(bed.summary == "床应避开凶方")
         assert(bed.remedy == listOf("移床"))
         assert(bed.evidence.size == 1 && bed.evidence[0].original == "凶方勿居")
+        assert(bed.evidence[0].reliability == "推演引申")
     }
 
     @Test

@@ -41,6 +41,23 @@ object ConditionEvaluator {
     private const val FACES_DIST = 2.5
     private const val WALL_BACKING_TOL = 0.25  // 有靠判定容差（相对物体进深）
 
+    // ---- 五行（L2）：物体五行 vs 八卦方位五行 ----
+    private val OBJECT_ELEMENT = mapOf(
+        "stove" to "火", "toilet" to "水", "fridge" to "水", "plant" to "木",
+        "sofa" to "土", "wardrobe" to "土", "bed" to "木", "dining" to "木",
+        "desk" to "木", "study" to "木", "door" to "木", "window" to "木",
+        "front_desk" to "金", "cashier" to "金", "finance_room" to "金", "pillar" to "金"
+    )
+    private val SECTOR_ELEMENT = mapOf(
+        "北" to "水", "东北" to "土", "东" to "木", "东南" to "木",
+        "南" to "火", "西南" to "土", "西" to "金", "西北" to "金"
+    )
+    private val ELEMENT_KE = mapOf("木" to "土", "土" to "水", "水" to "火", "火" to "金", "金" to "木") // A 克 B
+
+    /** 两行相克（双向任一）。 */
+    private fun elementClash(e1: String, e2: String): Boolean =
+        ELEMENT_KE[e1] == e2 || ELEMENT_KE[e2] == e1
+
     /** 评估一条规则条件是否违规。 */
     fun violated(
         cond: RuleCondition,
@@ -112,6 +129,13 @@ object ConditionEvaluator {
             "inWest" -> Geo.sector(o.pos, roomCenter(facts), facts.northAngle) == "西"
             "inWestNWNE" -> setOf("西", "西北", "东北").contains(Geo.sector(o.pos, roomCenter(facts), facts.northAngle))
             "notInWest", "notInWoodSector" -> setOf("西", "西北", "西南").contains(Geo.sector(o.pos, roomCenter(facts), facts.northAngle))
+            // L2 五行：物体五行与所在卦位五行相克（水火/火金/金木/木土/土水）
+            "elementClashWithSector" -> {
+                val objEl = OBJECT_ELEMENT[o.type] ?: return false
+                val sector = Geo.sector(o.pos, roomCenter(facts), facts.northAngle)
+                val secEl = SECTOR_ELEMENT[sector]
+                secEl != null && elementClash(objEl, secEl)
+            }
             else -> false
         }
     }

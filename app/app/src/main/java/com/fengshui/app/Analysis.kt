@@ -17,7 +17,13 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** 原文依据。 */
-data class Evidence(val book: String, val chapter: String, val original: String, val modern: String)
+data class Evidence(
+    val book: String,
+    val chapter: String,
+    val original: String,
+    val modern: String,
+    val reliability: String = ""
+)
 
 /** 一条规则卡（含原文与整改建议）。 */
 data class RuleCard(
@@ -147,7 +153,8 @@ object RuleEngine {
 
     private val RULE_FILES = listOf(
         "yszs_batch1.json", "zfj_batch2.json", "zj_batch2b.json",
-        "zss_fwl_batch3.json", "furniture_batch4.json", "office_batch5.json"
+        "zss_fwl_batch3.json", "furniture_batch4.json", "office_batch5.json",
+        "furniture_l1l4.json"
     )
 
     /** 纯函数：解析一份规则卡 JSON 文本 → 规则卡列表（含原文/整改）。 */
@@ -164,15 +171,16 @@ object RuleEngine {
                 for (j in 0 until ra.length()) remedy.add(ra.getString(j))
             }
             val ev = mutableListOf<Evidence>()
-            o.optJSONArray("evidence")?.let { ea ->
-                for (j in 0 until ea.length()) {
-                    val e = ea.getJSONObject(j)
-                    ev.add(Evidence(
-                        e.optString("book"), e.optString("chapter"),
-                        e.optString("original"), e.optString("modern")
-                    ))
+                o.optJSONArray("evidence")?.let { ea ->
+                    for (j in 0 until ea.length()) {
+                        val e = ea.getJSONObject(j)
+                        ev.add(Evidence(
+                            e.optString("book"), e.optString("chapter"),
+                            e.optString("original"), e.optString("modern"),
+                            e.optString("reliability")
+                        ))
+                    }
                 }
-            }
             cards.add(RuleCard(
                 id = o.optString("ruleId"),
                 title = o.optString("title"),

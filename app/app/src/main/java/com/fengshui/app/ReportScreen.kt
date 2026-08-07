@@ -51,18 +51,18 @@ fun ReportScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                // 凶/平（需整改）
+                // 凶/平（需整改）——按严重度排序
                 if (result.badHits.isNotEmpty()) {
                     Section("问题与整改（${result.badHits.size}）") {
-                        result.badHits.forEach { hit ->
+                        result.badHits.sortedByDescending { sevRank(it.severity) }.forEach { hit ->
                             RuleCardView(hit)
                         }
                     }
                 }
-                // 吉（正面）
+                // 吉（正面）——按严重度排序
                 if (result.goodHits.isNotEmpty()) {
                     Section("吉象（${result.goodHits.size}）") {
-                        result.goodHits.forEach { hit ->
+                        result.goodHits.sortedByDescending { sevRank(it.severity) }.forEach { hit ->
                             RuleCardView(hit)
                         }
                     }
@@ -123,12 +123,18 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     content()
 }
 
+/** 严重度排序权重（大凶最高）。 */
+private fun sevRank(s: String): Int = when (s) {
+    "大凶" -> 5; "凶" -> 4; "平" -> 3; "吉" -> 2; "大吉" -> 1; else -> 0
+}
+
 @Composable
 private fun RuleCardView(hit: RuleCard) {
+    val isDerived = hit.evidence.any { it.reliability == "推演引申" }
     Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Column(Modifier.padding(12.dp)) {
             Text(
-                "[${hit.severity}] ${hit.title}",
+                "[${hit.severity}] ${hit.title}${if (isDerived) "（推演）" else ""}",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )

@@ -214,3 +214,37 @@ class MingGuaAwareTest {
         assertTrue(!ConditionEvaluator.violated(r.condition, f, goodSectors = setOf("南"), badSectors = setOf("西", "西北", "东北")))
     }
 }
+
+/** L2 五行相克：物体五行 vs 卦位五行。 */
+class ElementClashTest {
+    // 房间 4x4，中心(2,2)，northAngle=0
+    private fun factsWith(type: String, at: Pt): RoomFacts {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        f.objects.add(Furniture("o1", type, at, 1.0, 1.0, Placement.FREESTANDING, Movability.MOVABLE))
+        return f
+    }
+
+    @Test fun stoveFireInNorthWater_clashes() {
+        // (2,3.5)=北(水)，火被水克 → 相克
+        val f = factsWith("stove", Pt(2.0, 3.5))
+        assertTrue(ConditionEvaluator.evalFact("elementClashWithSector", f.objects[0], f))
+    }
+
+    @Test fun stoveFireInEastWood_noClash() {
+        // (3.5,2)=东(木)，木生火 → 不相克
+        val f = factsWith("stove", Pt(3.5, 2.0))
+        assertTrue(!ConditionEvaluator.evalFact("elementClashWithSector", f.objects[0], f))
+    }
+
+    @Test fun plantWoodInWestMetal_clashes() {
+        // (0.5,2)=西(金)，金克木 → 相克
+        val f = factsWith("plant", Pt(0.5, 2.0))
+        assertTrue(ConditionEvaluator.evalFact("elementClashWithSector", f.objects[0], f))
+    }
+
+    @Test fun toiletWaterInSouthFire_clashes() {
+        // (2,0.5)=南(火)，水火相冲 → 相克
+        val f = factsWith("toilet", Pt(2.0, 0.5))
+        assertTrue(ConditionEvaluator.evalFact("elementClashWithSector", f.objects[0], f))
+    }
+}
