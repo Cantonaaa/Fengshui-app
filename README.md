@@ -76,7 +76,11 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 ## 隐私
 
-生辰、扫描数据全部在本地（私有 SharedPreferences / 应用缓存），**无任何网络上传**，无账号体系。
+生辰、扫描数据全部在本地（私有 SharedPreferences / 应用缓存），**无任何网络上传**，无账号体系。日常使用完全离线；仅当你在首页点击「检查更新」时才联网访问 GitHub Releases（可选项）。
+
+## 更新
+
+应用内置更新通道：首页「检查更新」→ 比对 GitHub 最新 Release → 有新版则下载安装。国内访问 GitHub 可能较慢，若失败可稍后重试或手动从 Releases 下载。
 
 ## 状态与 Roadmap
 

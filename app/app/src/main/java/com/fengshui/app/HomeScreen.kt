@@ -20,10 +20,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +34,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun HomeScreen(
@@ -41,6 +46,52 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     var scene by remember { mutableStateOf(AppState.scene) }
+    val scope = rememberCoroutineScope()
+    var updateMsg by remember { mutableStateOf<String?>(null) }
+    var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
+    var downloading by remember { mutableStateOf(false) }
+
+    fun checkUpdate() {
+        updateMsg = "检查中…"
+        scope.launch(Dispatchers.IO) {
+            val info = UpdateChecker.checkLatest()
+            val current = BuildConfig.VERSION_NAME
+            withContext(Dispatchers.Main) {
+                updateMsg = when {
+                    info == null -> "检查失败（网络或服务不可达）"
+                    UpdateChecker.isNewer(info.version, current) -> { updateInfo = info; null }
+                    else -> "当前已是最新版本"
+                }
+            }
+        }
+    }
+
+    fun startDownload(info: UpdateChecker.UpdateInfo) {
+        downloading = true
+        updateMsg = "下载中…"
+        scope.launch(Dispatchers.IO) {
+            val id = UpdateChecker.download(context, info.apkUrl)
+            while (true) {
+                kotlinx.coroutines.delay(1000)
+                val p = UpdateChecker.downloadProgress(context, id)
+                withContext(Dispatchers.Main) {
+                    when {
+                        p >= 100 -> {
+                            downloading = false
+                            val f = UpdateChecker.downloadedFile(context)
+                            if (f != null) {
+                                if (UpdateChecker.install(context, f)) updateMsg = "更新包已下载，请按系统提示安装"
+                                else { updateMsg = "需开启「安装未知应用」权限"; UpdateChecker.openInstallPermissionSettings(context) }
+                            }
+                        }
+                        p < 0 -> { downloading = false; updateMsg = "下载失败" }
+                        else -> updateMsg = "下载中… $p%"
+                    }
+                }
+                if (p >= 100 || p < 0) break
+            }
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -166,6 +217,31 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 20.dp),
                 textAlign = TextAlign.Center
             )
+
+            // 检查更新（可选在线）
+            TextButton(onClick = { checkUpdate() }, modifier = Modifier.padding(top = 8.dp)) {
+                Text("检查更新")
+            }
+            updateMsg?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            updateInfo?.let { info ->
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { updateInfo = null },
+                    title = { Text("发现新版本 v${info.version}") },
+                    text = { Text(info.notes.take(500), style = MaterialTheme.typography.bodySmall) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            updateInfo = null
+                            startDownload(info)
+                        }) { Text("下载安装") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { updateInfo = null }) { Text("取消") }
+                    }
+                )
+            }
         }
     }
 }
