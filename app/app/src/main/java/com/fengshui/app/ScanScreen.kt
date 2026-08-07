@@ -63,6 +63,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var permissionRequested by remember { mutableStateOf(false) }
     var pointCount by remember { mutableIntStateOf(0) }
     var objCount by remember { mutableIntStateOf(0) }
+    var unknownCount by remember { mutableIntStateOf(0) }
     var azimuthDeg by remember { mutableStateOf("--") }
     var northSet by remember { mutableStateOf(AppState.hasNorth()) }
     val recorder = remember { PointCloudRecorder() }
@@ -163,20 +164,24 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                                                     ObjectLocalizer.projectToFloor(snap, d.cx, d.bottom, floorH)
                                                                 else null
                                                                 if (pos != null) {
-                                                                    // 尺寸估计：bbox×焦距×水平距离 → 占地宽钳制到类型范围
-                                                                    val dist = Math.hypot(
-                                                                        pos[0].toDouble() - snap.ox.toDouble(),
-                                                                        pos[2].toDouble() - snap.oz.toDouble()
-                                                                    )
-                                                                    val (w, _) = SizeEstimator.estimate(
-                                                                        d.right - d.left, d.bottom - d.top,
-                                                                        snap.fx, snap.fy, dist
-                                                                    )
-                                                                    val (ddx, ddz) = FactsBuilder.defaultDims(d.cls)
-                                                                    val dimX = SizeEstimator.footprintWidth(w, ddx)
-                                                                    AppState.recordObject(d.cls, pos[0].toDouble(), pos[2].toDouble(), dimX, ddz)
+                                                                    if (d.cls == "未识别") {
+                                                                        AppState.recordUnknown()   // 不在类别内，只计数不录入规则
+                                                                    } else {
+                                                                        // 尺寸估计：bbox×焦距×水平距离 → 占地宽钳制到类型范围
+                                                                        val dist = Math.hypot(
+                                                                            pos[0].toDouble() - snap.ox.toDouble(),
+                                                                            pos[2].toDouble() - snap.oz.toDouble()
+                                                                        )
+                                                                        val (w, _) = SizeEstimator.estimate(
+                                                                            d.right - d.left, d.bottom - d.top,
+                                                                            snap.fx, snap.fy, dist
+                                                                        )
+                                                                        val (ddx, ddz) = FactsBuilder.defaultDims(d.cls)
+                                                                        val dimX = SizeEstimator.footprintWidth(w, ddx)
+                                                                        AppState.recordObject(d.cls, pos[0].toDouble(), pos[2].toDouble(), dimX, ddz)
+                                                                    }
                                                                     val p = "%.1f,%.1f".format(pos[0], pos[2])
-                                                                    Log.i(TAG, "检测 ${d.cls} score=${"%.2f".format(d.score)} @($p) 尺寸${"%.2f".format(dimX)}m")
+                                                                    Log.i(TAG, "检测 ${d.cls} score=${"%.2f".format(d.score)} @($p)")
                                                                 }
                                                             }
                                                         }
@@ -225,6 +230,14 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                         )
                         Text(
                             "磁北: $azimuthDeg° ${if (northSet) "·已校准" else "·未校准"}",
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            color = Color.White
+                        )
+                        Text(
+                            "未识别: $unknownCount",
                             modifier = Modifier
                                 .padding(top = 4.dp)
                                 .background(Color.Black.copy(alpha = 0.5f))
@@ -295,7 +308,9 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                             val badHits = hits.filter { it.severity != "吉" }
                                             val plan = solveRemediation(facts, rules, badHits, AppState.guaInfo!!)
                                             val infos = sectorInfo(objects, poly, AppState.northAngle!!)
-                                            AppState.analysisResult = AnalysisResult(AppState.guaInfo, true, objects.size, hits, infos, plan)
+                                            AppState.analysisResult = AnalysisResult(
+                                                AppState.guaInfo, true, objects.size, hits, infos, plan, AppState.unknownCount
+                                            )
                                             withContext(Dispatchers.Main) {
                                                 status = "分析完成：命中 ${hits.size} 条规则"
                                                 onAnalyze()
@@ -324,12 +339,14 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     LaunchedEffect(arcoreReady) {
         while (arcoreReady) {
             pointCount = recorder.size
+            unknownCount = AppState.unknownCount
             kotlinx.coroutines.delay(500)
         }
     }
 
     // 加载 K3 检测模型（assets/yolo_world.param/.bin），后台线程避免 UI 冻结
     LaunchedEffect(Unit) {
+        AppState.resetScan()   // 新扫描会话
         kotlinx.coroutines.withContext(Dispatchers.IO) {
             detector.load()
         }

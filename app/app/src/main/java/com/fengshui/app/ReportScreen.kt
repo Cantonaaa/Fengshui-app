@@ -38,6 +38,14 @@ fun ReportScreen(onBack: () -> Unit) {
                 Section("北向") {
                     Text(if (result.northSet) "已校准" else "未校准", style = MaterialTheme.typography.bodyMedium)
                 }
+                if (result.unknownCount > 0) {
+                    Section("未识别物体") {
+                        Text(
+                            "${result.unknownCount} 个检测未落入判断类别（分类置信度不足），不计入风水分析。",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
                 // 物体清单
                 Section("识别物体（${result.objects.size}）") {
                     if (result.objects.isEmpty()) {

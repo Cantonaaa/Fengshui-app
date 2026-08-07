@@ -48,7 +48,7 @@ class YOLOWorldNcnn(private val context: Context) {
         }
     }
 
-    fun detect(bitmap: Bitmap, confThr: Float = 0.35f, iouThr: Float = 0.45f): List<Detection> {
+    fun detect(bitmap: Bitmap, confThr: Float = 0.35f, iouThr: Float = 0.45f, marginThr: Float = 0.15f): List<Detection> {
         if (!isReady) return emptyList()
         val w = bitmap.width
         val h = bitmap.height
@@ -62,7 +62,7 @@ class YOLOWorldNcnn(private val context: Context) {
             bytes[i * 4 + 2] = (c and 0xFF).toByte()
             bytes[i * 4 + 3] = 0xFF.toByte()
         }
-        val res = nativeDetect(bytes, w, h, confThr, iouThr) ?: return emptyList()
+        val res = nativeDetect(bytes, w, h, confThr, iouThr, marginThr) ?: return emptyList()
         return parseResult(res)
     }
 
@@ -70,7 +70,7 @@ class YOLOWorldNcnn(private val context: Context) {
      * ARCore YUV_420_888 平面直送。Image 须来自 [android.media.ImageReader]/ARCore acquireCameraImage。
      * 在后台线程调用；JNI 内一步完成 YUV→RGB+缩放，不经过 Bitmap。
      */
-    fun detectYuv(image: Image, confThr: Float = 0.35f, iouThr: Float = 0.45f): List<Detection> {
+    fun detectYuv(image: Image, confThr: Float = 0.35f, iouThr: Float = 0.45f, marginThr: Float = 0.15f): List<Detection> {
         if (!isReady) return emptyList()
         val yPlane = image.planes[0]
         val uPlane = image.planes[1]
@@ -80,7 +80,7 @@ class YOLOWorldNcnn(private val context: Context) {
             image.width, image.height,
             yPlane.rowStride, uPlane.rowStride, uPlane.pixelStride,
             yPlane.buffer.position(), uPlane.buffer.position(), vPlane.buffer.position(),
-            confThr, iouThr
+            confThr, iouThr, marginThr
         ) ?: return emptyList()
         return parseResult(res)
     }
@@ -94,7 +94,8 @@ class YOLOWorldNcnn(private val context: Context) {
             val score = res[idx + 1]
             val l = res[idx + 2]; val t = res[idx + 3]; val r = res[idx + 4]; val b = res[idx + 5]
             idx += 6
-            dets.add(Detection(vocab.getOrElse(cls) { "obj$cls" }, score, l, t, r, b))
+            val label = if (cls < 0) UNKNOWN else vocab.getOrElse(cls) { "obj$cls" }
+            dets.add(Detection(label, score, l, t, r, b))
         }
         return dets
     }
@@ -109,14 +110,14 @@ class YOLOWorldNcnn(private val context: Context) {
 
     private external fun nativeLoadModel(paramPath: String, binPath: String): Boolean
     private external fun nativeDetect(
-        rgba: ByteArray, w: Int, h: Int, confThr: Float, iouThr: Float
+        rgba: ByteArray, w: Int, h: Int, confThr: Float, iouThr: Float, marginThr: Float
     ): FloatArray?
     private external fun nativeDetectYuv(
         y: ByteBuffer, u: ByteBuffer, v: ByteBuffer,
         w: Int, h: Int,
         yRowStride: Int, uvRowStride: Int, uvPixelStride: Int,
         yPos: Int, uPos: Int, vPos: Int,
-        confThr: Float, iouThr: Float
+        confThr: Float, iouThr: Float, marginThr: Float
     ): FloatArray?
 
     companion object {
@@ -124,5 +125,6 @@ class YOLOWorldNcnn(private val context: Context) {
             System.loadLibrary("yoloworld")
         }
         private const val TAG = "K3Ncnn"
+        private const val UNKNOWN = "未识别"
     }
 }

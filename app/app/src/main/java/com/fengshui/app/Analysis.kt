@@ -46,7 +46,8 @@ data class AnalysisResult(
     val objectCount: Int,
     val hits: List<RuleCard>,
     val objects: List<ObjInfo>,
-    val plan: RemediationPlan? = null
+    val plan: RemediationPlan? = null,
+    val unknownCount: Int = 0
 ) {
     val goodHits: List<RuleCard> get() = hits.filter { it.severity == "吉" }
     val badHits: List<RuleCard> get() = hits.filter { it.severity != "吉" }

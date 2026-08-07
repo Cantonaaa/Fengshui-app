@@ -38,6 +38,18 @@ object AppState {
 
     // 原始检测缓冲（跨线程追加），分析时聚类成真实物体
     private val detBuffer = mutableListOf<ScanObject>()
+    var unknownCount = 0   // 分类置信度不足（不在类别内）的检测数
+
+    /** 新扫描会话：清空上一轮检测与未识别计数。 */
+    @Synchronized
+    fun resetScan() {
+        detBuffer.clear()
+        unknownCount = 0
+        analysisResult = null
+    }
+
+    @Synchronized
+    fun recordUnknown() { unknownCount++ }
 
     /**
      * 缓冲一条检测（不立即合并）。跨线程安全。

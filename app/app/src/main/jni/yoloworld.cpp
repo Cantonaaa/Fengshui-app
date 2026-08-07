@@ -93,8 +93,15 @@ static ncnn::Mat yuvToMat(const unsigned char* y, const unsigned char* u, const 
 }
 
 // 共享检测：网络 forward + [17,8400] 解码 + NMS，返回 float[]（原图坐标）
-static jfloatArray detectFromMat(JNIEnv* env, const ncnn::Mat& in,
-                                 int src_w, int src_h, float conf_thr, float iou_thr) {
+static jfloatArray detectFromMat(JNIEnv* env, ncnn::Mat in,
+                                 int src_w, int src_h, float conf_thr, float iou_thr, float margin_thr) {
+    // 输入归一化到 [0,1]：模型按 [0,1] 导出/训练（喂 [0,255] 会致类别饱和误判）
+    {
+        float* p = (float*)in.data;
+        const int n = in.total();
+        const float k = 0.00392156862745098f;   // 1/255
+        for (int i = 0; i < n; i++) p[i] *= k;
+    }
     ncnn::Extractor ex = g_net.create_extractor();
     ex.input("in0", in);
     ncnn::Mat out;
@@ -107,18 +114,21 @@ static jfloatArray detectFromMat(JNIEnv* env, const ncnn::Mat& in,
 
     std::vector<Object> objects;
     for (int i = 0; i < num_boxes; i++) {
-        float max_s = 0.f;
-        int best_c = 0;
+        float s1 = 0.f, s2 = 0.f;
+        int c1 = 0;
         for (int c = 0; c < num_classes; c++) {
             float s = out.row(4 + c)[i];
-            if (s > max_s) { max_s = s; best_c = c; }
+            if (s > s1) { s2 = s1; s1 = s; c1 = c; }
+            else if (s > s2) s2 = s;
         }
-        if (max_s < conf_thr) continue;
+        if (s1 < conf_thr) continue;
+        // 分类置信度 margin：top1-top2 过小 → 模型不确定 → 标记"未识别"(cls=-1)
+        int cls = (s1 - s2) < margin_thr ? -1 : c1;
         float x = out.row(0)[i];
         float y = out.row(1)[i];
         float bw = out.row(2)[i];
         float bh = out.row(3)[i];
-        objects.push_back(Object{best_c, max_s, x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2});
+        objects.push_back(Object{cls, s1, x - bw / 2, y - bh / 2, x + bw / 2, y + bh / 2});
     }
 
     nms(objects, iou_thr);
@@ -167,7 +177,7 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeLoadModel(
 extern "C" JNIEXPORT jfloatArray JNICALL
 Java_com_fengshui_app_YOLOWorldNcnn_nativeDetect(
     JNIEnv* env, jobject, jbyteArray rgba, jint w, jint h,
-    jfloat conf_thr, jfloat iou_thr) {
+    jfloat conf_thr, jfloat iou_thr, jfloat margin_thr) {
     if (!g_loaded) return nullptr;
 
     jbyte* buf = env->GetByteArrayElements(rgba, nullptr);
@@ -175,7 +185,7 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeDetect(
         (const unsigned char*)buf, ncnn::Mat::PIXEL_RGBA2RGB, w, h, TARGET, TARGET);
     env->ReleaseByteArrayElements(rgba, buf, JNI_ABORT);
 
-    return detectFromMat(env, in, w, h, conf_thr, iou_thr);
+    return detectFromMat(env, in, w, h, conf_thr, iou_thr, margin_thr);
 }
 
 // 返回 float[]：[数量, cls, score, x1,y1,x2,y2, ...]（原图坐标）；输入 YUV_420_888 平面直送
@@ -187,7 +197,7 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeDetectYuv(
     jint w, jint h,
     jint yRowStride, jint uvRowStride, jint uvPixelStride,
     jint yPos, jint uPos, jint vPos,
-    jfloat conf_thr, jfloat iou_thr) {
+    jfloat conf_thr, jfloat iou_thr, jfloat margin_thr) {
     if (!g_loaded) return nullptr;
 
     const unsigned char* y = (const unsigned char*)env->GetDirectBufferAddress(yBuf);
@@ -197,5 +207,5 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeDetectYuv(
 
     ncnn::Mat in = yuvToMat(y + yPos, u + uPos, v + vPos, w, h,
                             yRowStride, uvRowStride, uvPixelStride);
-    return detectFromMat(env, in, w, h, conf_thr, iou_thr);
+    return detectFromMat(env, in, w, h, conf_thr, iou_thr, margin_thr);
 }
