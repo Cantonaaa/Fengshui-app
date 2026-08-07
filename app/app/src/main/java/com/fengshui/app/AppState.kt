@@ -41,12 +41,13 @@ object AppState {
     private val detBuffer = mutableListOf<ScanObject>()
     var unknownCount = 0   // 分类置信度不足（不在类别内）的检测数
 
-    /** 新扫描会话：清空上一轮检测与未识别计数。 */
+    /** 新扫描会话：清空上一轮检测与未识别计数；北向为 AR 会话内数据，强制重定向。 */
     @Synchronized
     fun resetScan() {
         detBuffer.clear()
         unknownCount = 0
         analysisResult = null
+        northAngle = null
     }
 
     @Synchronized
@@ -109,7 +110,6 @@ object AppState {
         birthIsLunar = sp.getBoolean("birthIsLunar", false)
         scene = sp.getString("scene", "bedroom") ?: "bedroom"
         gender = sp.getString("gender", null)
-        northAngle = if (sp.contains("northAngle")) sp.getFloat("northAngle", 0f).toDouble() else null
         refreshGua()
     }
 
@@ -122,7 +122,6 @@ object AppState {
             putBoolean("birthIsLunar", birthIsLunar)
             putString("scene", scene)
             if (gender != null) putString("gender", gender) else remove("gender")
-            if (northAngle != null) putFloat("northAngle", northAngle!!.toFloat()) else remove("northAngle")
             apply()
         }
     }

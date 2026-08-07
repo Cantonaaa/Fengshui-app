@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,7 +65,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var permissionRequested by remember { mutableStateOf(false) }
     var pointCount by remember { mutableIntStateOf(0) }
     var azimuthDeg by remember { mutableStateOf("--") }
-    var northSet by remember { mutableStateOf(AppState.hasNorth()) }
+    var northSet by remember { mutableStateOf(false) }   // 每次入宅须定向正盘（北向不跨会话）
     val recorder = remember { PointCloudRecorder() }
     val detector = remember { YOLOWorldNcnn(context) }
     val northHelper = remember { NorthHelper(context) }
@@ -239,27 +238,6 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val btnShape = RoundedCornerShape(12.dp)
-                        OutlinedButton(
-                            onClick = {
-                                val f = recorder.exportPly(context)
-                                status = if (f != null) "已导出: ${f.name}" else "尚无点云"
-                            },
-                            modifier = Modifier.fillMaxWidth().height(44.dp),
-                            shape = btnShape
-                        ) { Text("存录星点") }
-                        OutlinedButton(
-                            onClick = {
-                                val poly = RoomPolygon.buildPolygon(recorder.getPoints())
-                                status = if (poly != null) {
-                                    "户型多边形: ${poly.vertices.size} 顶点, 面积 ${"%.1f".format(poly.area)} m²"
-                                } else {
-                                    "点云不足，无法生成户型"
-                                }
-                                Log.i(TAG, status)
-                            },
-                            modifier = Modifier.fillMaxWidth().height(44.dp),
-                            shape = btnShape
-                        ) { Text("量得宅形（面积）") }
                         Button(
                             onClick = { calibrateNorth() },
                             modifier = Modifier.fillMaxWidth().height(44.dp),

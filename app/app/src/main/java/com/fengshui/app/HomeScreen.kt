@@ -89,14 +89,13 @@ fun HomeScreen(
                 }
             }
 
-            // 北向状态卡
+            // 罗盘状态卡（北向为入宅会话内数据，首页恒显示未正）
             StatusCard {
                 Text("罗盘", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 Text(
-                    if (AppState.hasNorth()) "已校准" else "未正（入宅页定盘）",
+                    "未正（入宅后定盘）",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (AppState.hasNorth()) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error,
+                    color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 6.dp)
                 )
