@@ -30,3 +30,9 @@ Thumbs.db
 
 # ncnn 预编译库（第三方，按 ncnn release 下载后放入）
 app/app/src/main/jni/ncnn/
+
+# scripts/ 大下载产物（不提交，按需下载）
+scripts/*.whl
+scripts/*.pt
+scripts/*.zip
+scripts/pnnx/
