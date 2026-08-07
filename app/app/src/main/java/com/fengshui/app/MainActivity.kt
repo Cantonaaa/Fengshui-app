@@ -77,6 +77,13 @@ fun HomeScreen(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
+        AppState.birthSummary()?.let {
+            Text(
+                "生辰：$it",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
         Text(
             if (AppState.hasNorth()) "北向：已校准" else "北向：未校准（扫描页校准）",
             style = MaterialTheme.typography.bodyMedium,

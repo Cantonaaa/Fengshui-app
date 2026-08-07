@@ -19,6 +19,9 @@ data class ScanObject(
 object AppState {
 
     var birthYear: Int? = null
+    var birthMonth: Int? = null
+    var birthDay: Int? = null
+    var birthIsLunar: Boolean = false      // true=农历输入, false=公历输入
     var gender: String? = null          // 男 / 女
     var guaInfo: MingGua.GuaInfo? = null
     var northAngle: Double? = null      // sector() 用：世界帧方位 → 磁北 偏移（弧度）
@@ -26,6 +29,12 @@ object AppState {
 
     val scanObjects = mutableListOf<ScanObject>()
     var analysisResult: AnalysisResult? = null
+
+    /** 用于命卦的农历年（公历输入先转农历）。 */
+    fun effectiveLunarYear(): Int? =
+        if (birthYear != null && birthMonth != null && birthDay != null)
+            LunarUtil.lunarYear(birthIsLunar, birthYear!!, birthMonth!!, birthDay!!)
+        else null
 
     /** 合并记录物体：同类型 0.8m 内并入均值，否则新增。跨线程安全。 */
     @Synchronized
@@ -58,14 +67,18 @@ object AppState {
     fun snapshotObjects(): List<ScanObject> = scanObjects.toList()
 
     fun refreshGua() {
-        guaInfo = if (birthYear != null && gender != null && baguaJson.isNotEmpty() && baguaJson != "{}")
-            MingGua.compute(birthYear!!, gender!!, baguaJson)
+        val ly = effectiveLunarYear()
+        guaInfo = if (ly != null && gender != null && baguaJson.isNotEmpty() && baguaJson != "{}")
+            MingGua.compute(ly, gender!!, baguaJson)
         else null
     }
 
     fun load(context: Context) {
         val sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         birthYear = if (sp.contains("birthYear")) sp.getInt("birthYear", 0) else null
+        birthMonth = if (sp.contains("birthMonth")) sp.getInt("birthMonth", 0) else null
+        birthDay = if (sp.contains("birthDay")) sp.getInt("birthDay", 0) else null
+        birthIsLunar = sp.getBoolean("birthIsLunar", false)
         gender = sp.getString("gender", null)
         northAngle = if (sp.contains("northAngle")) sp.getFloat("northAngle", 0f).toDouble() else null
         refreshGua()
@@ -75,14 +88,28 @@ object AppState {
         val sp = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         sp.edit().apply {
             if (birthYear != null) putInt("birthYear", birthYear!!) else remove("birthYear")
+            if (birthMonth != null) putInt("birthMonth", birthMonth!!) else remove("birthMonth")
+            if (birthDay != null) putInt("birthDay", birthDay!!) else remove("birthDay")
+            putBoolean("birthIsLunar", birthIsLunar)
             if (gender != null) putString("gender", gender) else remove("gender")
             if (northAngle != null) putFloat("northAngle", northAngle!!.toFloat()) else remove("northAngle")
             apply()
         }
     }
 
-    fun hasBirth(): Boolean = birthYear != null && gender != null && guaInfo != null
+    fun hasBirth(): Boolean =
+        birthYear != null && birthMonth != null && birthDay != null && gender != null && guaInfo != null
     fun hasNorth(): Boolean = northAngle != null
+
+    /** 生辰显示文本（含历法）。 */
+    fun birthSummary(): String? {
+        if (!hasBirth()) return null
+        val y = birthYear!!; val m = birthMonth!!; val d = birthDay!!
+        return if (birthIsLunar)
+            "农历${y}年${LunarUtil.lunarMonthName(m)}${LunarUtil.lunarDayName(d)}"
+        else
+            "${y}年${m}月${d}日（公历）"
+    }
 
     private const val PREFS = "fengshui_prefs"
 }

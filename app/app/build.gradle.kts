@@ -76,6 +76,9 @@ dependencies {
     // 规则引擎/整改求解器（纯 Kotlin 模块）
     implementation(project(":solver"))
 
+    // 农历/公历换算（命卦需农历生年）
+    implementation("cn.6tail:lunar:1.7.7")
+
     testImplementation(libs.junit)
     testImplementation("org.json:json:20240303")
 }
