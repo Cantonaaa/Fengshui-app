@@ -72,4 +72,10 @@ dependencies {
     // ARCore
     implementation(libs.arcore)
     implementation(libs.sceneview.ar)
+
+    // 规则引擎/整改求解器（纯 Kotlin 模块）
+    implementation(project(":solver"))
+
+    testImplementation(libs.junit)
+    testImplementation("org.json:json:20240303")
 }

@@ -1,6 +1,7 @@
 package com.fengshui.app
 
 import kotlin.math.abs
+import kotlin.math.floor
 import kotlin.math.sqrt
 
 /**
@@ -90,10 +91,72 @@ object RoomPolygon {
         val keep = xz.filter { sqrt((it[0]-cenX)*(it[0]-cenX)+(it[1]-cenZ)*(it[1]-cenZ)) < med + 2.5f * mad }
         if (keep.size < 3) return null
 
+        // 3b) 玻璃透反射鬼影裁剪：密度滤波 + 最大连通分量
+        val keep2 = cullGhost(keep)
+        if (keep2.size < 3) return null
+
         // 4) 凸包（Andrew 单调链）
-        val hull = convexHull(keep)
+        val hull = convexHull(keep2)
         val area = polygonArea(hull)
         return Polygon(hull, area)
+    }
+
+    /**
+     * 剔除玻璃/镜面透反射鬼影点（墙外幻影簇 + 稀疏杂点）。
+     * 输入/输出均为 XZ 点（[x, z]）。两步：
+     *  1) 密度滤波：网格邻居数 ≥ minNeighbors 才保留（鬼影点更稀疏）
+     *  2) 最大连通分量：仅保留最大簇（窗外幻影与室内隔墙，通常不连通）
+     */
+    private fun cullGhost(points: List<FloatArray>, r: Float = 0.3f, minNeighbors: Int = 3): List<FloatArray> {
+        if (points.size < 10) return points
+        val grid = HashMap<Long, MutableList<Int>>()
+        fun key(cx: Int, cz: Int): Long = (cx.toLong() shl 32) or (cz.toLong() and 0xFFFFFFFFL)
+        fun cellOf(x: Float, z: Float): Pair<Int, Int> =
+            Pair(floor(x / r).toInt(), floor(z / r).toInt())
+        for ((i, p) in points.withIndex()) {
+            val (cx, cz) = cellOf(p[0], p[1])
+            grid.getOrPut(key(cx, cz)) { mutableListOf() }.add(i)
+        }
+
+        // 1) 密度滤波：邻居（r 内）计数
+        val keep = BooleanArray(points.size)
+        for ((i, p) in points.withIndex()) {
+            val (cx, cz) = cellOf(p[0], p[1])
+            var cnt = 0
+            for (dx in -1..1) for (dz in -1..1) {
+                val bucket = grid[key(cx + dx, cz + dz)] ?: continue
+                for (j in bucket) {
+                    if (j == i) continue
+                    val q = points[j]
+                    if (sqrt((p[0]-q[0])*(p[0]-q[0]) + (p[1]-q[1])*(p[1]-q[1])) <= r) cnt++
+                }
+            }
+            keep[i] = cnt >= minNeighbors
+        }
+
+        // 2) 最大连通分量（并查集）
+        val parent = IntArray(points.size) { it }
+        fun find(x: Int): Int { var r0 = x; while (parent[r0] != r0) r0 = parent[r0]; return r0 }
+        fun union(a: Int, b: Int) { val ra = find(a); val rb = find(b); if (ra != rb) parent[ra] = rb }
+        for ((i, p) in points.withIndex()) {
+            if (!keep[i]) continue
+            val (cx, cz) = cellOf(p[0], p[1])
+            for (dx in -1..1) for (dz in -1..1) {
+                val bucket = grid[key(cx + dx, cz + dz)] ?: continue
+                for (j in bucket) {
+                    if (j == i || !keep[j]) continue
+                    val q = points[j]
+                    if (sqrt((p[0]-q[0])*(p[0]-q[0]) + (p[1]-q[1])*(p[1]-q[1])) <= r) union(i, j)
+                }
+            }
+        }
+        val compSize = HashMap<Int, Int>()
+        for (i in points.indices) if (keep[i]) {
+            val root = find(i); compSize[root] = (compSize[root] ?: 0) + 1
+        }
+        val maxRoot = compSize.maxByOrNull { it.value }?.key ?: return points
+        val result = points.indices.filter { keep[it] && find(it) == maxRoot }.map { points[it] }
+        return if (result.size >= 3) result else points
     }
 
     /** Andrew 单调链凸包，返回 (x,z) 顶点序列。 */

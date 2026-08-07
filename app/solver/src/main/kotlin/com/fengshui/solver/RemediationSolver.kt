@@ -32,12 +32,13 @@ data class RemediationPlan(
  */
 class RemediationSolver(
     private val rules: List<Rule>,
-    private val context: Map<String, String> = emptyMap()
+    private val context: Map<String, String> = emptyMap(),
+    private val goodSectors: Set<String> = ConditionEvaluator.defaultGood,
+    private val badSectors: Set<String> = ConditionEvaluator.defaultBad
 ) {
     private val index = RuleIndex(rules)
     private val goodSeverity = setOf("大吉", "吉")
     private val sevWeight = mapOf("大凶" to 5, "凶" to 3, "平" to 1, "吉" to -1, "大吉" to -2)
-    private val goodBackingSectors = setOf("北", "西北", "西", "西南", "东北")
 
     fun solve(facts: RoomFacts, violatedIds: List<String>): RemediationPlan {
         val actions = mutableListOf<RemediationAction>()
@@ -97,7 +98,7 @@ class RemediationSolver(
     /** 对同一 subject 的规则组联合求解。 */
     private fun tryFixGroup(facts: RoomFacts, targets: List<Rule>, s: Furniture): FixResult {
         val affected = index.rulesFor(listOf(s.type))
-        val beforeViolated = affected.filter { ConditionEvaluator.violated(it.condition, facts, context) }.map { it.id }.toSet()
+        val beforeViolated = affected.filter { ConditionEvaluator.violated(it.condition, facts, context, goodSectors, badSectors) }.map { it.id }.toSet()
 
         // 候选位（含墙段长度校验）
         val candidates = candidatePositions(facts, s)
@@ -111,7 +112,7 @@ class RemediationSolver(
             if (!isValidPosition(facts, s, p)) { sawBlocked = true; continue }
             val old = s.pos
             s.pos = p
-            val after = affected.filter { ConditionEvaluator.violated(it.condition, facts, context) }.map { it.id }.toSet()
+            val after = affected.filter { ConditionEvaluator.violated(it.condition, facts, context, goodSectors, badSectors) }.map { it.id }.toSet()
             s.pos = old
 
             val targetsFixed = targets.all { it.id !in after }
@@ -126,7 +127,7 @@ class RemediationSolver(
             // 软目标（构造吉 + 吉方墙偏好）
             val soft = if (perfect || newWeight <= 1) {
                 val fewerGoodViolated = -affected.filter { it.severity in goodSeverity }
-                    .count { ConditionEvaluator.violated(it.condition, facts, context) }
+                    .count { ConditionEvaluator.violated(it.condition, facts, context, goodSectors, badSectors) }
                 val backingBonus = if (s.placement == Placement.WALL_NEEDING && backingSectorGood(facts, p, s)) 1 else 0
                 val noNewPenalty = if (perfect) 0 else -newWeight * 2
                 fewerGoodViolated + backingBonus + noNewPenalty
@@ -161,7 +162,7 @@ class RemediationSolver(
         if (len < 1e-6) return false
         val backPt = Pt(p.x - dx / len * 0.01, p.z - dz / len * 0.01)
         val center = Pt(facts.polygon.map { it.x }.average(), facts.polygon.map { it.z }.average())
-        return Geo.sector(backPt, center, facts.northAngle) in goodBackingSectors
+        return Geo.sector(backPt, center, facts.northAngle) in goodSectors
     }
 
     /** 候选位生成（优化2：墙段长度校验）。 */

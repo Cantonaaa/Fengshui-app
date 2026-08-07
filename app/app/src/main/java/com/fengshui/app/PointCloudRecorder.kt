@@ -5,6 +5,8 @@ import android.util.Log
 import com.google.ar.core.Frame
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.abs
+import kotlin.jvm.Synchronized
 
 private const val TAG = "A1PointCloud"
 
@@ -25,9 +27,33 @@ class PointCloudRecorder(
     val size: Int get() = points.size
 
     /** 返回点云副本（供户型多边形计算）。 */
+    @Synchronized
     fun getPoints(): List<FloatArray> = points.toList()
 
+    /**
+     * 稳健地面高度：中位数 + MAD 剔除离群点后的 5 分位数。
+     * 抗 -99m 等特征点云垃圾点；点不足返回 null。用于物体定位的 y=floorHeight。
+     */
+    @Synchronized
+    fun floorY(): Float? {
+        if (points.size < 50) return null
+        val ys = points.map { it[1] }
+        val sorted = ys.sorted()
+        val med = sorted[sorted.size / 2]
+        if (!med.isFinite()) return null
+        // MAD = 中位绝对偏差 * 1.4826（近似正态标准差）
+        val devs = ys.map { abs(it - med) }.sorted()
+        val mad = devs[devs.size / 2] * 1.4826f
+        if (mad <= 1e-3f) return null
+        val clean = ys.filter { abs(it - med) < 6f * mad }.sorted()
+        if (clean.size < 30) return null
+        val idx = minOf(clean.size - 1, (clean.size * 0.05f).toInt())
+        val p = clean[idx]
+        return if (p.isFinite()) p else null
+    }
+
     /** 每帧调用；内部按 sampleEveryNFrames 与 stride 降采样。 */
+    @Synchronized
     fun onFrame(frame: Frame, sampleEveryNFrames: Int = 5, stride: Int = 3) {
         frameCount++
         if (frameCount % sampleEveryNFrames != 0) return
@@ -53,6 +79,7 @@ class PointCloudRecorder(
     }
 
     /** 导出为 ASCII PLY（x,y,z），返回文件路径。 */
+    @Synchronized
     fun exportPly(context: Context): File? {
         if (points.isEmpty()) return null
         val dir = context.getExternalFilesDir(null) ?: context.filesDir
@@ -72,6 +99,7 @@ class PointCloudRecorder(
         return file
     }
 
+    @Synchronized
     fun reset() {
         points.clear(); frameCount = 0
         minX = Float.MAX_VALUE; maxX = -Float.MAX_VALUE

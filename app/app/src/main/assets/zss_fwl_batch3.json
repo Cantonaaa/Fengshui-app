@@ -1,0 +1,99 @@
+[
+  {
+    "ruleId": "zss_01",
+    "title": "葬乘生气·居宅亦贵生气",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "room": 1 } },
+    "finding": {
+      "summary": "风水之要在「乘生气」：居宅、布置皆当使生气聚而不散。生气足则家宅安康，生气散则诸事不利。",
+      "remedy": []
+    },
+    "evidence": [
+      { "book": "葬书", "chapter": "内篇", "quoteKey": "zss_01", "original": "葬者乘生氣也", "modern": "葬法贵在乘着生气。风水以乘生气为要旨。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zss_02",
+    "title": "气乘风则散·界水则止（藏风聚气）",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["windy", "draftThrough"] } },
+    "finding": {
+      "summary": "生气乘风则散，界水则止。居宅忌四散漏风、前后门窗直通成穿堂风，宜藏风聚气，气聚则吉。",
+      "remedy": ["避免门窗正对直通形成穿堂风", "风口以屏风、家具、窗帘遮挡"]
+    },
+    "evidence": [
+      { "book": "葬书", "chapter": "内篇", "quoteKey": "zss_02", "original": "氣乘風則散，界水則止", "modern": "生气乘风则散，界水则止。", "reliability": "直接明确" },
+      { "book": "葬书", "chapter": "内篇", "quoteKey": "zss_03", "original": "古人聚之使不散，行之使有止，故謂之風水", "modern": "古人使生气聚而不散、行而有止，所以叫作风水。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zss_04",
+    "title": "明堂惜水如惜血·堂里避风如避贼",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["windy"] } },
+    "finding": {
+      "summary": "明堂（堂前/厅堂）水不可泄、风不可直灌，惜水如血、避风如贼，厅堂须藏风聚气。",
+      "remedy": ["厅堂/客厅保持聚气，忌强风直灌", "客厅门户避免正对直通漏气"]
+    },
+    "evidence": [
+      { "book": "葬书", "chapter": "内篇", "quoteKey": "zss_04", "original": "明堂惜水如惜血，堂裡避風如避賊", "modern": "明堂惜水如同惜血，堂内避风如同避贼。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "fwl_01",
+    "title": "聚散之理·气聚则宅兴",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["dispersed"] } },
+    "finding": {
+      "summary": "山川以聚散论大势：小聚则小成，大聚则大成，散而不聚则不成。居宅同理，人气与生气宜聚不宜散。",
+      "remedy": ["住宅格局宜紧凑聚气，忌空旷离散", "活动空间与人气聚处（客厅）宜居中开阔"]
+    },
+    "evidence": [
+      { "book": "发微论", "chapter": "聚散篇", "quoteKey": "fwl_01", "original": "小聚則地小成，大聚則地大成，散而不聚，不可以言地矣", "modern": "小聚则小成，大聚则大成，散而不聚就不可以称得上好地。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "fwl_02",
+    "title": "向背之理·吉凶之机",
+    "severity": "平",
+    "schools": ["形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "room": 1 } },
+    "finding": {
+      "summary": "观地须审其情之向背：向我者吉、背我者凶。居宅亦然，主位、卧房等宜得生旺之向。",
+      "remedy": []
+    },
+    "evidence": [
+      { "book": "发微论", "chapter": "向背篇", "quoteKey": "fwl_02", "original": "觀形貌者得其偽，觀性情者得其真，向背之理明而吉凶禍福之機灼然", "modern": "观形貌只能得伪，观性情方得真；向背之理明了，吉凶祸福之机便昭然。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "fwl_03",
+    "title": "生死之理·有气为生",
+    "severity": "平",
+    "schools": ["形法"],
+    "category": "theory",
+    "status": "active",
+    "condition": { "require": { "room": 1 } },
+    "finding": {
+      "summary": "有气者为生、无气者为死。居宅贵在有生气：明窗净几、人气常聚之处为生，阴暗闭塞、杂物堆聚之处为死。",
+      "remedy": ["保持空间明亮通风、人气旺盛", "清理阴暗杂乱的死角"]
+    },
+    "evidence": [
+      { "book": "发微论", "chapter": "生死篇", "quoteKey": "fwl_03", "original": "有氣者為生，無氣者為死", "modern": "有气的为生，无气的为死。", "reliability": "推演引申" }
+    ]
+  }
+]

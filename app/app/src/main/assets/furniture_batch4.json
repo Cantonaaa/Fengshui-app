@@ -1,0 +1,99 @@
+[
+  {
+    "ruleId": "zfj_ck_01",
+    "title": "衣柜储物（仓库）宜土方·忌贴卧房",
+    "severity": "凶",
+    "schools": ["八宅", "五行"],
+    "category": "wardrobe",
+    "status": "active",
+    "condition": { "require": { "wardrobe": 1 }, "spatial": { "wardrobe": ["nearBedroom", "inWoodSector"] } },
+    "finding": {
+      "summary": "衣柜、储物柜属土，宜安于土方（西南/东北），不宜在木方（东/东南）；又忌紧贴卧室两旁前后。",
+      "remedy": ["储物柜/衣柜宜置于西南或东北方位", "避免紧贴卧室床头或床两侧"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·倉庫碓磨", "quoteKey": "zfj_ck_01", "original": "倉庫屬土，宜在土方，不宜在木方，又忌貼近臥房兩旁前後", "modern": "仓库属土，宜在土方，不宜在木方，又忌贴近卧室两旁前后。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_frig_01",
+    "title": "冰箱（水）忌与灶相冲",
+    "severity": "凶",
+    "schools": ["八宅", "五行"],
+    "category": "fridge",
+    "status": "active",
+    "condition": { "require": { "fridge": 1, "stove": 1 }, "spatial": { "fridge": ["nearStove", "facesStove"] } },
+    "finding": {
+      "summary": "冰箱属水。井（水类）忌与灶同在一间相近，水火不宜相冲；水缸对中锅为水火既济则吉。推演：冰箱宜与灶保持距离，忌紧贴或正对灶火。",
+      "remedy": ["冰箱与灶保持适当距离，勿紧贴相对", "无法移开时以隔断、绿植隔挡"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_water_01", "original": "忌與井同在一間", "modern": "（灶）忌与井同在一间（水物与灶相冲不吉）。", "reliability": "直接明确" },
+      { "book": "宅法举隅", "chapter": "下册·厨灶", "quoteKey": "zfj_water_02", "original": "水缸對中鍋，為水火既濟", "modern": "水缸对中锅，为水火既济（吉）。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_dtable_01",
+    "title": "餐桌忌正对大门冲对",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "dining",
+    "status": "active",
+    "condition": { "require": { "dining": 1, "door": 1 }, "spatial": { "dining": ["facesDoor"] } },
+    "finding": {
+      "summary": "餐桌（厅堂进食处）不宜正对大门或与门柱冲对，气冲则食不安。推演自大门忌当门冲对之理。",
+      "remedy": ["餐桌避开大门直冲方向", "以屏风、餐边柜遮挡"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·門戶", "quoteKey": "zfj_men_02", "original": "開門對柱，二門夾柱，三門相對，式如品字，兩脅開門，棟下開門，屋大門小，屋小門大，並門前有直屋、直路、直水、直塹、直牆、直塘、直岸、樹、石、廟、塚，當門衝對，不論宅之前後，皆忌", "modern": "开门对柱、当门冲对者皆忌。推演：餐桌亦不宜当门冲对。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "zfj_sofa_01",
+    "title": "沙发（主座）宜背有靠",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "sofa",
+    "status": "active",
+    "condition": { "require": { "sofa": 1 }, "spatial": { "sofa": ["backToWall"] } },
+    "finding": {
+      "summary": "沙发（客厅主座）背后宜有实墙为靠，忌背对门、窗或背后空虚，主坐卧安稳、得人扶持。推演自安床忌床后空虚之理。",
+      "remedy": ["沙发靠实墙摆放", "背后空虚处以高柜、屏风作靠", "忌背对大门、落地窗"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·安床", "quoteKey": "zfj_bed_03", "original": "安床，忌在正梁之下，騎梁擔梁，屋頭盡處，樓頭盡處，床後空虛，床後堆谷，床前衝柱，床兩頭不著壁，床頭邊開門，外氣衝逼，樓梯壓床，床下暗溝，床前有灶，床後有井，種種皆當避", "modern": "安床忌床后空虚。推演：沙发主座亦宜背有靠、忌背后空虚。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "zfj_plant_01",
+    "title": "盆栽（木）宜向宅内·忌卧室密植",
+    "severity": "平",
+    "schools": ["五行"],
+    "category": "plant",
+    "status": "active",
+    "condition": { "require": { "plant": 1 }, "spatial": { "plant": ["nearBedHead"] } },
+    "finding": {
+      "summary": "室内盆栽属木，枝叶宜向宅内（生气向内），宜置于明亮生气方位；卧室床头不宜密植蔽塞，恐阴气过盛。推演自树木向宅吉背宅凶。",
+      "remedy": ["盆栽置于明亮、生气旺盛之处", "卧室床头不摆放过多绿植", "枝叶向宅内生长"]
+    },
+    "evidence": [
+      { "book": "阳宅十书", "chapter": "卷一·论宅外形第一", "quoteKey": "yszs_waixing_05", "original": "凡宅樹木皆欲向宅吉背宅凶", "modern": "凡宅树木皆欲向宅则吉，背宅则凶。推演：室内盆栽枝叶宜向宅内。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "zfj_pet_01",
+    "title": "宠物栏舍忌大门左右",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "pet",
+    "status": "dormant",
+    "condition": { "require": { "pet": 1 }, "spatial": { "pet": ["besideDoor"] } },
+    "finding": {
+      "summary": "六畜（宠物）栏舍忌安置于大门左右及关煞方位，主口舌不宁。",
+      "remedy": ["宠物窝舍避开大门左右", "宜安置于安静偏侧位置"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "下册·六畜欄", "quoteKey": "zfj_lc_01", "original": "六畜，忌安置大門左右、及關方", "modern": "六畜忌安置在大门左右及关煞方位。", "reliability": "直接明确" }
+    ]
+  }
+]

@@ -191,3 +191,26 @@ class RemediationSolverTest {
         assertTrue(plan.tradeoffNotes.isNotEmpty())
     }
 }
+
+/** 命卦感知：吉凶方位由外部传入，而非硬编码。 */
+class MingGuaAwareTest {
+    @Test fun inGoodSector_usesCustomSectors() {
+        val f = Fixtures.rectRoom(4.0, 4.0)   // 中心(2,2)，northAngle=0
+        val sofa = Furniture("s1", "sofa", Pt(2.0, 0.5), 2.0, 0.9, Placement.WALL_NEEDING, Movability.MOVABLE)  // 南
+        // 默认吉方不含"南"；自定义吉方含"南"
+        assertTrue(!ConditionEvaluator.evalFact("inGoodSector", sofa, f))
+        assertTrue(ConditionEvaluator.evalFact("inGoodSector", sofa, f, goodSectors = setOf("南")))
+        // 自定义凶方含"南" → inKillSector 命中
+        assertTrue(ConditionEvaluator.evalFact("inKillSector", sofa, f, badSectors = setOf("南")))
+    }
+
+    @Test fun violated_honorsCustomBadSectors() {
+        val f = Fixtures.rectRoom(4.0, 4.0)
+        val sofa = Furniture("s1", "sofa", Pt(2.0, 0.5), 2.0, 0.9, Placement.WALL_NEEDING, Movability.MOVABLE)  // 南
+        f.objects.add(sofa)
+        val r = Fixtures.rule("rS", "凶", "sofa", "inKillSector")
+        // 默认凶方含"南" → 违规；自定义凶方不含"南" → 不违规（命卦感知）
+        assertTrue(ConditionEvaluator.violated(r.condition, f))
+        assertTrue(!ConditionEvaluator.violated(r.condition, f, goodSectors = setOf("南"), badSectors = setOf("西", "西北", "东北")))
+    }
+}

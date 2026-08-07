@@ -1,0 +1,98 @@
+[
+  {
+    "ruleId": "zj_wuxu_01",
+    "title": "宅有五虚五实",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "space",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["areaVsPeopleUnbalanced", "doorLargerThanInterior"] } },
+    "finding": {
+      "summary": "宅有五虚令人贫耗：宅大人少、宅门大内小、墙院不完、井灶不处、宅地多屋少庭院广；五实令人富贵：宅小人多、宅大门小、墙院完全、宅小六畜多、宅水沟东南流。",
+      "remedy": ["住宅大小与居住人口相称，忌宅大人少或空旷无依", "门与宅的大小比例相称，忌门大宅小", "家居宜充实有人气，忌过于空旷"]
+    },
+    "evidence": [
+      { "book": "宅经", "chapter": "宅经·论宅", "quoteKey": "zj_wuxu_01", "original": "宅有五虛，令人貧耗；五實，令人富貴。宅大人少，一虛；宅門大內小，二虛；牆院不完，三虛；井灶不處，四虛；宅地多屋少庭院廣，五虛。宅小人多，一實；宅大門小，二實；牆院完全，三實；宅小六畜多，四實；宅水溝東南流，五實", "modern": "宅有五虚令人贫耗，五实令人富贵。五虚：宅大人少、门大内小、墙院不完、井灶不处、地多屋少庭院广；五实：宅小人多、宅大门小、墙院完全、宅小六畜多、宅水沟东南流。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zj_zhai_01",
+    "title": "宅不宜过广",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "space",
+    "status": "active",
+    "condition": { "require": { "room": 1 }, "spatial": { "room": ["areaTooLargeForPeople"] } },
+    "finding": {
+      "summary": "宅不宜过于宽广空荡，宅大人少则人气不聚，主贫耗。",
+      "remedy": ["居住空间宜与人口相称，避免大而空荡", "过大的空间宜以家具、隔断充实人气"]
+    },
+    "evidence": [
+      { "book": "宅经", "chapter": "宅经·论宅", "quoteKey": "zj_zhai_01", "original": "宅不宜廣", "modern": "宅不宜过于宽广。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zj_fude_01",
+    "title": "福德方宜壮实·刑祸方宜空荒",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "direction",
+    "status": "active",
+    "condition": { "require": { "room": 1, "direction": 1 } },
+    "finding": {
+      "summary": "宅之福德方宜充实壮实、相互连接；刑祸方宜空缺荒疏，不宜高壮。",
+      "remedy": ["吉方（福德方）宜摆放家具充实、保持整洁壮实", "凶方（刑祸方）宜空旷低矮"]
+    },
+    "evidence": [
+      { "book": "宅经", "chapter": "宅经·论宅", "quoteKey": "zj_fude_01", "original": "刑禍之方缺復荒，福德之方連接長，吉也", "modern": "刑祸之方宜空缺荒疏，福德之方宜连接绵长，则吉。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zj_zhai_02",
+    "title": "阳宅宜修东北方",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "direction",
+    "status": "active",
+    "condition": { "require": { "room": 1, "direction": 1 } },
+    "finding": {
+      "summary": "阳宅（住家）宜重东、北两方位之修整布置；阴宅重西、南方。",
+      "remedy": ["住宅的东、北方位宜重点布置与修整"]
+    },
+    "evidence": [
+      { "book": "宅经", "chapter": "宅经·论宅", "quoteKey": "zj_zhai_02", "original": "陽宅更招東方北方，陰宅更招西方南方為重也", "modern": "阳宅更重东方北方，阴宅更重西方南方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zj_fude_02",
+    "title": "福德方须清洁阔厚",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "direction",
+    "status": "active",
+    "condition": { "require": { "room": 1, "direction": 1 } },
+    "finding": {
+      "summary": "福德之方应勤加修整，令其清洁、宽阔、厚实，主一家获安、荣华富贵。",
+      "remedy": ["吉方（福德方）保持清洁、开阔、家具充实"]
+    },
+    "evidence": [
+      { "book": "宅经", "chapter": "宅经·论宅", "quoteKey": "zj_fude_02", "original": "福德之方，勤依天道天德月德，生氣到其位，即修，令清潔闊厚，即一家獲安，榮華富貴", "modern": "福德之方勤加修整，令清洁阔厚，则一家获安、荣华富贵。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zj_zhai_03",
+    "title": "修宅先修刑祸方",
+    "severity": "平",
+    "schools": ["八宅"],
+    "category": "theory",
+    "status": "dormant",
+    "condition": { "require": { "room": 1, "direction": 1 } },
+    "finding": {
+      "summary": "修宅须先修刑祸方、后修福德方为吉；先修福德、后修刑祸则凶。",
+      "remedy": []
+    },
+    "evidence": [
+      { "book": "宅经", "chapter": "宅经·论宅", "quoteKey": "zj_zhai_03", "original": "凡修宅次第法，先修刑禍，後修福德即吉；先修福德，後修刑禍即凶", "modern": "凡修宅次序，先修刑祸方、后修福德方即吉；先修福德后修刑祸即凶。", "reliability": "直接明确" }
+    ]
+  }
+]

@@ -2,13 +2,19 @@ package com.fengshui.app
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.Image
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
 
 /**
  * K3/A1.4: 基于 NCNN(JNI) 的 YOLO-World 检测器门面。
  * 模型文件: assets/yolo_world.param + yolo_world.bin（NCNN 格式）。
+ *
+ * 两种输入路径：
+ *  - [detect]：RGBA Bitmap（兼容旧路径）
+ *  - [detectYuv]：ARCore YUV_420_888 平面直送（省去 Kotlin 逐像素转换，速度快）
  */
 class YOLOWorldNcnn(private val context: Context) {
 
@@ -57,8 +63,31 @@ class YOLOWorldNcnn(private val context: Context) {
             bytes[i * 4 + 3] = 0xFF.toByte()
         }
         val res = nativeDetect(bytes, w, h, confThr, iouThr) ?: return emptyList()
+        return parseResult(res)
+    }
+
+    /**
+     * ARCore YUV_420_888 平面直送。Image 须来自 [android.media.ImageReader]/ARCore acquireCameraImage。
+     * 在后台线程调用；JNI 内一步完成 YUV→RGB+缩放，不经过 Bitmap。
+     */
+    fun detectYuv(image: Image, confThr: Float = 0.35f, iouThr: Float = 0.45f): List<Detection> {
+        if (!isReady) return emptyList()
+        val yPlane = image.planes[0]
+        val uPlane = image.planes[1]
+        val vPlane = image.planes[2]
+        val res = nativeDetectYuv(
+            yPlane.buffer, uPlane.buffer, vPlane.buffer,
+            image.width, image.height,
+            yPlane.rowStride, uPlane.rowStride, uPlane.pixelStride,
+            yPlane.buffer.position(), uPlane.buffer.position(), vPlane.buffer.position(),
+            confThr, iouThr
+        ) ?: return emptyList()
+        return parseResult(res)
+    }
+
+    private fun parseResult(res: FloatArray): List<Detection> {
         val n = res[0].toInt()
-        val dets = ArrayList<Detection>()
+        val dets = ArrayList<Detection>(n)
         var idx = 1
         repeat(n) {
             val cls = res[idx].toInt()
@@ -81,6 +110,13 @@ class YOLOWorldNcnn(private val context: Context) {
     private external fun nativeLoadModel(paramPath: String, binPath: String): Boolean
     private external fun nativeDetect(
         rgba: ByteArray, w: Int, h: Int, confThr: Float, iouThr: Float
+    ): FloatArray?
+    private external fun nativeDetectYuv(
+        y: ByteBuffer, u: ByteBuffer, v: ByteBuffer,
+        w: Int, h: Int,
+        yRowStride: Int, uvRowStride: Int, uvPixelStride: Int,
+        yPos: Int, uPos: Int, vPos: Int,
+        confThr: Float, iouThr: Float
     ): FloatArray?
 
     companion object {

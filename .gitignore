@@ -36,3 +36,17 @@ scripts/*.whl
 scripts/*.pt
 scripts/*.zip
 scripts/pnnx/
+
+# scripts/ 模型转换中间产物（大体积，不入库；保留源码 .py 与验证脚本）
+scripts/*.onnx
+scripts/*.pnnx.bin
+scripts/*.pnnx.param
+scripts/*.py.pnnx.bin
+scripts/*.py.pnnx.param
+scripts/*.py.pnnx.onnx
+scripts/*.py.ncnn.bin
+scripts/*.py.ncnn.param
+scripts/*.py.pt
+scripts/*py_pnnx.py
+scripts/*py_ncnn.py
+scripts/__pycache__/

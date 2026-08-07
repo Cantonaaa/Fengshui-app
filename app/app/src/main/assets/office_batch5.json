@@ -1,0 +1,156 @@
+[
+  {
+    "ruleId": "zfj_ys_01",
+    "title": "主位（老板室/主办公区）后方宜厚实·前方忌逼窄穿射",
+    "severity": "吉",
+    "schools": ["形法"],
+    "category": "office",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "desk": 1 }, "spatial": { "desk": ["backToWall", "frontOpen", "noDraftFromDoor"] } },
+    "finding": {
+      "summary": "衙署以正堂为主，上手（主位后方/来方）宜厚重则升迁速；前方最嫌逼窄，怕穿射。映射现代办公：主位（老板/管理者）背后宜有靠，前方宜开阔，忌走廊门路直冲。",
+      "remedy": ["主办公位背后靠实墙/高柜（有靠）", "主位前方保持开阔，勿逼窄", "忌主位正对走廊门路直冲"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_01", "original": "衙署，上手要重，官升得速，若下手重者，不升，法以正堂為主", "modern": "衙署以上手（来方/靠方）厚重为要，上手厚重则升官快；以正堂为主。映射：主办公位后方宜厚实。", "reliability": "直接明确" },
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_02", "original": "前面最嫌逼窄，怕有穿射", "modern": "（正堂）前面最忌逼窄，怕有穿射。映射：主位前方忌逼窄、忌穿堂直射。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_04",
+    "title": "办公区宜东·财务室宜西（东书房西银库）",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "office",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "office_area": 1, "finance_room": 1 }, "spatial": { "office_area": ["inEast"], "finance_room": ["inWest"] } },
+    "finding": {
+      "summary": "衙署布局「东书房、西银库，得位者安」。映射现代办公：主要办公区宜在东侧，财务室宜在西侧，各得其所则安。",
+      "remedy": ["主要办公区设于东侧", "财务室设于西侧"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_04", "original": "東書房，西銀庫，得位者安", "modern": "东书房、西银库，各得其位则安。映射：办公区宜东，财务室宜西。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_05",
+    "title": "财务室（库房）宜兑乾艮方·忌震巽离方",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "finance",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "finance_room": 1 }, "spatial": { "finance_room": ["inWestNWNE", "notInEastSE"] } },
+    "finding": {
+      "summary": "衙署库房宜在兑（西）、乾（西北）、艮（东北）方位，不宜在震（东）、巽（东南）、离（南）方位。映射：财务室/金库宜设于西、西北、东北，忌设于东、东南、南。",
+      "remedy": ["财务室/金库宜设于西、西北、东北方位", "避免财务室设于东、东南、南方位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_05", "original": "庫房，宜兌及乾艮方，不宜震巽離方", "modern": "库房宜在兑（西）及乾（西北）、艮（东北）方，不宜在震（东）、巽（东南）、离（南）方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_06",
+    "title": "办公区宜开阔忌局促·后勤忌对主厅",
+    "severity": "凶",
+    "schools": ["形法"],
+    "category": "office",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "office_area": 1, "storage": 1 }, "spatial": { "storage": ["facesMainOffice"] } },
+    "finding": {
+      "summary": "衙署班房宜远忌逼，囹圄（后勤/库房）忌向衙厅。映射：办公区宜开阔不局促；后勤/杂物/库房门忌正对主办公区。",
+      "remedy": ["办公区保持开阔，勿局促相逼", "后勤、库房门不宜正对主办公区", "以屏风或隔断遮挡"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_06", "original": "班房，宜遠，忌逼，囹圄，忌向衙廳", "modern": "班房宜远忌逼，囹圄忌向衙厅。映射：办公区忌局促，后勤忌正对主办公区。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_08",
+    "title": "主官办公室门为咽喉·忌走廊直冲与背后空虚",
+    "severity": "凶",
+    "schools": ["形法", "八宅"],
+    "category": "office",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "desk": 1, "door": 1 }, "spatial": { "door": ["facesDesk", "corridorPointsToDoor"], "desk": ["backToDoor"] } },
+    "finding": {
+      "summary": "内衙与住宅同论，以内宅门为咽喉，关系最重；忌川堂直长自外冲内、衙后空虚、暗箭冲背、明堂逼窄。映射：主官办公室门为气口，忌走廊直冲、忌背后空虚（背门）、忌门前逼窄。",
+      "remedy": ["主官位背后不宜正对门（背门）", "忌走廊直冲办公室门", "办公室门前保持开阔，勿逼窄"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_08", "original": "內衙，與住宅同論，以內宅門為咽喉，关系最重，忌門枋朱漆，川堂直長，自外衝內，衙後空虛，暗箭衝背，明堂逼窄", "modern": "内衙与住宅同论，以内宅门为咽喉，关系最重；忌川堂直长自外冲内、衙后空虚、暗箭冲背、明堂逼窄。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_xs_01",
+    "title": "文昌文星位·学习办公区宜得文星拱照",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "study",
+    "scenario": ["both"],
+    "status": "active",
+    "condition": { "require": { "study": 1 }, "spatial": { "study": ["frontOpen", "inWenChang"] } },
+    "finding": {
+      "summary": "学宫得秀山秀水朝拱、前面文星矗起，则科第不脱。映射：学习/办公文昌区前方宜开阔明亮，得吉气拱照，利科名事业。",
+      "remedy": ["书房/文昌办公区前方保持开阔明亮", "文昌位（一白四绿）宜设学习办公之位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·學宮", "quoteKey": "zfj_xs_01", "original": "前面文星矗起，科第不脫", "modern": "前面文星矗起，科第不绝。映射：学习/文昌区前方宜得文星拱照、开阔明亮。", "reliability": "推演引申" }
+    ]
+  },
+  {
+    "ruleId": "zfj_dp_01",
+    "title": "前台/门迎水开向·忌开煞方",
+    "severity": "吉",
+    "schools": ["形法", "八宅"],
+    "category": "front_desk",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "front_desk": 1 }, "spatial": { "front_desk": ["facesGoodSector", "notInKillSector"] } },
+    "finding": {
+      "summary": "店铺以门为重，要迎水开门，忌开在煞方。映射：前台/接待区以门为要，宜迎生气开向，忌设于凶煞方位。",
+      "remedy": ["前台宜迎生气方位开向", "忌前台/大门开于凶煞方位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·店鋪", "quoteKey": "zfj_dp_01", "original": "店鋪以門為重，要迎水開門，忌開在煞方", "modern": "店铺以门为重，要迎水开门，忌开在煞方。映射：前台接待以门为要，迎生气、忌凶方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_dp_02",
+    "title": "收银/库柜宜安生旺方",
+    "severity": "吉",
+    "schools": ["八宅"],
+    "category": "finance",
+    "scenario": ["office"],
+    "status": "active",
+    "condition": { "require": { "cashier": 1 }, "spatial": { "cashier": ["inGoodSector"] } },
+    "finding": {
+      "summary": "店铺铺柜设坐俱以迎水为吉，库柜安于生旺方。映射：收银台/钱柜宜设于生旺方位。",
+      "remedy": ["收银台/钱柜设于生旺方位", "忌设于凶煞退方"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·店鋪", "quoteKey": "zfj_dp_02", "original": "鋪櫃設坐，俱以迎水為吉，庫櫃，安於生旺方", "modern": "铺柜设坐俱以迎水为吉，库柜安于生旺方。映射：收银库柜宜安生旺方。", "reliability": "直接明确" }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_07",
+    "title": "停车/设备区（马廄）宜乾兑坤艮方·忌离方",
+    "severity": "凶",
+    "schools": ["八宅"],
+    "category": "parking",
+    "scenario": ["office"],
+    "status": "dormant",
+    "condition": { "require": { "parking": 1 }, "spatial": { "parking": ["inWestNWNE"] } },
+    "finding": {
+      "summary": "衙署马廄（车马/设备区）宜在乾（西北）、兑（西）、坤（西南）、艮（东北）方，忌在离（南）方。映射：停车区/设备区宜设西北西西南东北，忌正南。",
+      "remedy": ["停车/设备区宜设西北、西、西南、东北方", "忌设于正南方位"]
+    },
+    "evidence": [
+      { "book": "宅法举隅", "chapter": "外六事·衙署", "quoteKey": "zfj_ys_07", "original": "馬廄，宜乾兌坤艮方，忌在離方", "modern": "马廄宜乾（西北）、兑（西）、坤（西南）、艮（东北）方，忌在离（南）方。", "reliability": "直接明确" }
+    ]
+  }
+]
