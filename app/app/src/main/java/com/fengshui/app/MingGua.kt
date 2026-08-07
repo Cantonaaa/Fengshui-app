@@ -21,7 +21,7 @@ object MingGua {
         val badSectors: List<String>    // 四凶方
     ) {
         val summary: String
-            get() = "$trigram 命（$group）· 吉方：${goodSectors.joinToString("/")} · 凶方：${badSectors.joinToString("/")}"
+            get() = "卦主${trigram}命（$group）· 吉方：${goodSectors.joinToString("/")} · 凶方：${badSectors.joinToString("/")}"
     }
 
     private val TRIGRAM_DIR = mapOf(

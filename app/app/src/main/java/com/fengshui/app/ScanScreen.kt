@@ -2,8 +2,6 @@ package com.fengshui.app
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.HandlerThread
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,7 +47,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 
 private const val TAG = "A1Scan"
@@ -68,23 +65,35 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var arcoreReady by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
     var pointCount by remember { mutableIntStateOf(0) }
-    var objCount by remember { mutableIntStateOf(0) }
-    var unknownCount by remember { mutableIntStateOf(0) }
     var azimuthDeg by remember { mutableStateOf("--") }
     var northSet by remember { mutableStateOf(AppState.hasNorth()) }
     val recorder = remember { PointCloudRecorder() }
     val detector = remember { YOLOWorldNcnn(context) }
     val northHelper = remember { NorthHelper(context) }
     val scope = rememberCoroutineScope()
+
     var detectorLoaded by remember { mutableStateOf(false) }
-    val detFrameCounter = remember { intArrayOf(0) }
     // AR 线程最近一帧相机快照（供校北读取；校北时须把手机指向磁北）
     val latestSnap = remember { arrayOfNulls<ObjectLocalizer.CameraSnapshot>(1) }
 
-    // A1.4：检测专用后台线程（取帧/推理不阻塞 AR 会话回调线程，扫描画面无感）
-    val detectThread = remember { HandlerThread("fengshui-detector").apply { start() } }
-    val detectHandler = remember { Handler(detectThread.looper) }
-    val detectBusy = remember { AtomicBoolean(false) }
+    fun calibrateNorth() {
+        val snap = latestSnap[0]
+        if (snap != null) {
+            AppState.northAngle = ObjectLocalizer.cameraForwardHeading(snap)
+            AppState.save(context)
+            northSet = true
+            status = "罗盘已正（沿当前朝向前方为北）"
+        } else {
+            status = "候 AR 帧至：请徐转罗盘，使示数归于零度"
+        }
+    }
+
+    // 录像后处理：关键帧缓冲（不即时检测）
+    val frameBuffer = remember { ScanFrameBuffer() }
+    var frameCount by remember { mutableIntStateOf(0) }
+    var circleDone by remember { mutableStateOf(false) }
+    var processing by remember { mutableStateOf(false) }
+    var procProgress by remember { mutableIntStateOf(0) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -143,93 +152,76 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                 Log.i(TAG, "已检测平面: ${planes.size}")
                             }
                             recorder.onFrame(frame)
-                            // A1.4：选帧检测（每 15 帧一次），异步到后台线程，不阻塞 AR 回调
-                            detFrameCounter[0]++
-                            if (detectorLoaded && detFrameCounter[0] % 15 == 0) {
+                            // 录像后处理：相机移动足够则缓存关键帧（JPEG+位姿），不即时检测
+                            val snap = ObjectLocalizer.snapshot(frame.camera)
+                            latestSnap[0] = snap
+                            val floorH = recorder.floorY() ?: recorder.minY
+                            if (detectorLoaded && frameBuffer.shouldCapture(snap)) {
                                 val img = try {
                                     frame.acquireCameraImage()
                                 } catch (e: Exception) {
                                     null
                                 }
                                 if (img != null) {
-                                    // 回调内快照相机位姿/内参 + 地面高度（纯数据，跨线程安全）
-                                    val snap = ObjectLocalizer.snapshot(frame.camera)
-                                    latestSnap[0] = snap
-                                    val floorH = recorder.floorY() ?: recorder.minY
-                                    if (detectBusy.compareAndSet(false, true)) {
-                                        try {
-                                            detectHandler.post {
-                                                try {
-                                                    img.use {
-                                                        val dets = detector.detectYuv(it)
-                                                        if (dets.isNotEmpty()) {
-                                                            objCount = dets.size
-                                                            dets.take(6).forEach { d ->
-                                                                // 用框底边中心（物体立脚点）向地面投影，避免水平射线无法求交
-                                                                val pos = if (floorH.isFinite())
-                                                                    ObjectLocalizer.projectToFloor(snap, d.cx, d.bottom, floorH)
-                                                                else null
-                                                                if (pos != null) {
-                                                                    if (d.cls == "未识别") {
-                                                                        AppState.recordUnknown()   // 不在类别内，只计数不录入规则
-                                                                    } else {
-                                                                        // 尺寸估计：bbox×焦距×水平距离 → 占地宽钳制到类型范围
-                                                                        val dist = Math.hypot(
-                                                                            pos[0].toDouble() - snap.ox.toDouble(),
-                                                                            pos[2].toDouble() - snap.oz.toDouble()
-                                                                        )
-                                                                        val (w, _) = SizeEstimator.estimate(
-                                                                            d.right - d.left, d.bottom - d.top,
-                                                                            snap.fx, snap.fy, dist
-                                                                        )
-                                                                        val (ddx, ddz) = FactsBuilder.defaultDims(d.cls)
-                                                                        val dimX = SizeEstimator.footprintWidth(w, ddx)
-                                                                        AppState.recordObject(d.cls, pos[0].toDouble(), pos[2].toDouble(), dimX, ddz)
-                                                                    }
-                                                                    val p = "%.1f,%.1f".format(pos[0], pos[2])
-                                                                    Log.i(TAG, "检测 ${d.cls} score=${"%.2f".format(d.score)} @($p)")
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } catch (e: Exception) {
-                                                    Log.w(TAG, "检测帧处理失败: ${e.message}")
-                                                } finally {
-                                                    detectBusy.set(false)
-                                                }
-                                            }
-                                        } catch (e: Exception) {
-                                            // post 失败（线程已退出）：释放资源
-                                            img.close()
-                                            detectBusy.set(false)
-                                        }
-                                    } else {
-                                        img.close() // 上一帧仍在推理，丢弃本帧
+                                    try {
+                                        img.use { frameBuffer.capture(it, snap, floorH) }
+                                        frameCount = frameBuffer.size
+                                    } catch (e: Exception) {
+                                        Log.w(TAG, "关键帧缓存失败: ${e.message}")
                                     }
                                 }
                             }
+                            // 自动提示：已绕宅一周
+                            if (frameBuffer.isFullCircle && !circleDone) {
+                                circleDone = true
+                                status = "已绕宅一周，可勘毕起批"
+                            }
                         }
                     )
-                    Row(
-                        Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 12.dp, start = 12.dp, end = 12.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            OverlayChip("平面 $planeCount")
-                            OverlayChip("点云 $pointCount")
-                            OverlayChip("物体 $objCount")
-                            OverlayChip("未识别 $unknownCount")
-                            OverlayChip(
-                                if (northSet) "北向已校准" else "磁北 $azimuthDeg°",
-                                accent = if (northSet)
-                                    androidx.compose.ui.graphics.Color(0xFF8FD4A0)
-                                else androidx.compose.ui.graphics.Color.White
+                    if (processing) {
+                        Column(
+                            Modifier
+                                .align(Alignment.Center)
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            TheoryCarousel()
+                            Text(
+                                "起批中 $procProgress%",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(top = 4.dp)
                             )
                         }
-                        CompassView(azimuthDeg, northSet)
+                    } else if (!northSet) {
+                        CalibrationGuide(
+                            azimuthText = azimuthDeg,
+                            onCalibrate = { calibrateNorth() },
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 12.dp, start = 12.dp, end = 12.dp)
+                        )
+                    } else {
+                        Row(
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = 12.dp, start = 12.dp, end = 12.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                OverlayChip("平面 $planeCount")
+                                OverlayChip("星点 $pointCount")
+                                OverlayChip("关键帧 $frameCount")
+                                if (circleDone) OverlayChip("已绕宅一周", accent = androidx.compose.ui.graphics.Color(0xFFFFD54F))
+                                OverlayChip("罗盘已正", accent = androidx.compose.ui.graphics.Color(0xFF8FD4A0))
+                            }
+                            CompassView(azimuthDeg, northSet)
+                        }
                     }
                 }
                 Surface(
@@ -242,7 +234,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                     ) {
                         Text(status, style = MaterialTheme.typography.bodySmall)
                         Text(
-                            "缓慢移动手机，环绕房间完整走一圈",
+                            "徐行绕室，环顾一周",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -254,7 +246,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             },
                             modifier = Modifier.fillMaxWidth().height(44.dp),
                             shape = btnShape
-                        ) { Text("导出点云 (PLY)") }
+                        ) { Text("存录星点") }
                         OutlinedButton(
                             onClick = {
                                 val poly = RoomPolygon.buildPolygon(recorder.getPoints())
@@ -267,61 +259,63 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             },
                             modifier = Modifier.fillMaxWidth().height(44.dp),
                             shape = btnShape
-                        ) { Text("生成户型 (面积)") }
+                        ) { Text("量得宅形（面积）") }
                         Button(
-                            onClick = {
-                                val snap = latestSnap[0]
-                                if (snap != null) {
-                                    AppState.northAngle = ObjectLocalizer.cameraForwardHeading(snap)
-                                    AppState.save(context)
-                                    northSet = true
-                                    status = "北向已校准（沿当前朝向前方为磁北）"
-                                } else {
-                                    status = "等待 AR 帧：请把手机朝向磁北（罗盘读数 0°）"
-                                }
-                            },
+                            onClick = { calibrateNorth() },
                             modifier = Modifier.fillMaxWidth().height(44.dp),
                             shape = btnShape
-                        ) { Text(if (northSet) "重新校准北向" else "校准北向（朝向磁北后点击）") }
+                        ) { Text(if (northSet) "重定罗盘" else "定向正盘（罗盘示数 0° 时点按）") }
                         Button(
                             onClick = {
-                                val objects = AppState.snapshotObjects()
-                                if (objects.isEmpty()) {
-                                    status = "未识别到物体，请先扫描"
-                                } else if (AppState.northAngle == null) {
-                                    status = "请先校准北向"
-                                } else if (AppState.guaInfo == null) {
-                                    status = "请先设置生辰（首页）"
-                                } else {
-                                    status = "分析中..."
-                                    scope.launch(Dispatchers.Default) {
-                                        try {
-                                            val poly: List<Pt> = RoomPolygon.buildPolygon(recorder.getPoints())
-                                                ?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
-                                                ?: FactsBuilder.boundingPolygon(objects)
-                                            val facts = FactsBuilder.build(objects, poly, AppState.northAngle!!)
-                                            val rules = RuleEngine.loadRules(context)
-                                            val hits = RuleEngine.analyze(facts, rules, AppState.guaInfo)
-                                            val badHits = hits.filter { it.severity != "吉" }
-                                            val plan = solveRemediation(facts, rules, badHits, AppState.guaInfo!!)
-                                            val infos = sectorInfo(objects, poly, AppState.northAngle!!)
-                                            AppState.analysisResult = AnalysisResult(
-                                                AppState.guaInfo, true, objects.size, hits, infos, plan, AppState.unknownCount, poly
-                                            )
+                                if (processing) return@Button
+                                val gua = AppState.guaInfo
+                                if (AppState.northAngle == null) { status = "请先定向正盘"; return@Button }
+                                if (gua == null) { status = "请先定生辰（首页）"; return@Button }
+                                processing = true
+                                procProgress = 0
+                                status = "起批中..."
+                                scope.launch(Dispatchers.Default) {
+                                    try {
+                                        val frames = frameBuffer.all()
+                                        if (frames.isEmpty()) {
                                             withContext(Dispatchers.Main) {
-                                                status = "分析完成：命中 ${hits.size} 条规则"
-                                                onAnalyze()
+                                                processing = false
+                                                status = "尚无摄帧，请先绕宅勘察"
                                             }
-                                        } catch (e: Exception) {
-                                            Log.w(TAG, "分析失败: ${e.message}", e)
-                                            withContext(Dispatchers.Main) { status = "分析失败: ${e.message}" }
+                                            return@launch
+                                        }
+                                        val objects = PostScanProcessor.process(frames, detector) { done, total ->
+                                            procProgress = done * 100 / maxOf(total, 1)
+                                        }
+                                        val poly: List<Pt> = RoomPolygon.buildPolygon(recorder.getPoints())
+                                            ?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
+                                            ?: FactsBuilder.boundingPolygon(objects)
+                                        val facts = FactsBuilder.build(objects, poly, AppState.northAngle!!)
+                                        val rules = RuleEngine.loadRules(context)
+                                        val hits = RuleEngine.analyze(facts, rules, gua)
+                                        val badHits = hits.filter { it.severity != "吉" }
+                                        val plan = solveRemediation(facts, rules, badHits, gua)
+                                        val infos = sectorInfo(objects, poly, AppState.northAngle!!)
+                                        AppState.analysisResult = AnalysisResult(
+                                            gua, true, objects.size, hits, infos, plan, 0, poly
+                                        )
+                                        withContext(Dispatchers.Main) {
+                                            processing = false
+                                            status = "批语已成：判得吉凶 ${hits.size} 则"
+                                            onAnalyze()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.w(TAG, "起批失败: ${e.message}", e)
+                                        withContext(Dispatchers.Main) {
+                                            processing = false
+                                            status = "起批未成: ${e.message}"
                                         }
                                     }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(50.dp),
                             shape = RoundedCornerShape(14.dp)
-                        ) { Text("完成扫描并分析", style = MaterialTheme.typography.titleSmall) }
+                        ) { Text(if (processing) "起批中..." else "勘毕起批", style = MaterialTheme.typography.titleSmall) }
                         TextButton(
                             onClick = onBack,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -336,7 +330,6 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     LaunchedEffect(arcoreReady) {
         while (arcoreReady) {
             pointCount = recorder.size
-            unknownCount = AppState.unknownCount
             kotlinx.coroutines.delay(500)
         }
     }
@@ -359,12 +352,10 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
         }
     }
 
-    // 离开扫描页时停止检测线程、释放资源
+    // 离开扫描页时释放资源
     DisposableEffect(Unit) {
         onDispose {
-            detectBusy.set(true)
-            detectHandler.removeCallbacksAndMessages(null)
-            detectThread.quitSafely()
+            frameBuffer.clear()
             northHelper.stop()
         }
     }

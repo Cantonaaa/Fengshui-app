@@ -59,7 +59,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 24.dp)
             )
             Text(
-                "AR 扫描房间 · 命卦方向 · 古籍规则",
+                "入宅勘察 · 命卦方位 · 古籍依凭",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
@@ -81,7 +81,7 @@ fun HomeScreen(
                     }
                 } else {
                     Text(
-                        "未设置（需生辰计算命卦）",
+                        "未定（需生辰以起命卦）",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp)
@@ -91,9 +91,9 @@ fun HomeScreen(
 
             // 北向状态卡
             StatusCard {
-                Text("北向", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text("罗盘", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 Text(
-                    if (AppState.hasNorth()) "已校准" else "未校准（扫描页校准）",
+                    if (AppState.hasNorth()) "已校准" else "未正（入宅页定盘）",
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (AppState.hasNorth()) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.error,
@@ -104,7 +104,7 @@ fun HomeScreen(
 
             // 场景选择
             StatusCard {
-                Text("房间场景", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text("居所类别", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 Row(
                     modifier = Modifier.padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -145,23 +145,23 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("开始 AR 扫描", style = MaterialTheme.typography.titleMedium)
+                Text("入宅勘察", style = MaterialTheme.typography.titleMedium)
             }
 
             OutlinedButton(
                 onClick = onSetBirth,
                 modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 10.dp),
                 shape = RoundedCornerShape(12.dp)
-            ) { Text("设置生辰（命卦）") }
+            ) { Text("定生辰 · 起命卦") }
 
             OutlinedButton(
                 onClick = onViewReport,
                 modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 10.dp),
                 shape = RoundedCornerShape(12.dp)
-            ) { Text("查看报告") }
+            ) { Text("观阅批语") }
 
             Text(
-                "生辰与数据仅存于本机，不上传",
+                "生辰与本机诸事，谨藏于内，绝不上传",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 20.dp),

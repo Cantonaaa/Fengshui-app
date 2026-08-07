@@ -73,6 +73,18 @@ private val TYPE_MAP = mapOf(
     "front desk" to "front_desk"
 )
 
+/** 物体类型 → 中文（报告雅言展示）。 */
+private val TYPE_NAME_ZH = mapOf(
+    "bed" to "床", "sofa" to "沙发", "dining" to "餐桌", "fridge" to "冰箱",
+    "plant" to "盆栽", "toilet" to "厕所", "wardrobe" to "衣柜", "door" to "门",
+    "window" to "窗", "stove" to "灶", "pillar" to "柱", "desk" to "书桌",
+    "front_desk" to "前台", "study" to "书房", "office_area" to "办公区",
+    "finance_room" to "财务室", "storage" to "储物", "cashier" to "收银"
+)
+
+/** 物体类型中文名。 */
+fun typeNameZH(t: String): String = TYPE_NAME_ZH[t] ?: t
+
 /** 物体类型 → 默认占地尺寸 [dimX, dimZ]（米）。 */
 private val DIMS = mapOf(
     "bed" to (1.8 to 2.0), "sofa" to (2.0 to 0.9), "dining" to (1.5 to 0.8),

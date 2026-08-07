@@ -32,10 +32,10 @@ fun ReportScreen(onBack: () -> Unit) {
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
         ) {
-            Text("风水分析报告", style = MaterialTheme.typography.headlineMedium)
+            Text("堪舆批语", style = MaterialTheme.typography.headlineMedium)
             if (result == null) {
                 Text(
-                    "尚无分析结果。请先在首页设置生辰 → 扫描房间（校准北向）→ 完成扫描并分析。",
+                    "尚无批语。请先在首页定生辰、起命卦 → 入宅勘察（定向正盘）→ 勘毕起批。",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 16.dp)
                 )
@@ -43,7 +43,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 // 宫位图（房间 + 八卦吉凶方 + 物体点位）
                 if (result.polygon.size >= 3) {
                     Text(
-                        "房间宫位图（红=凶方 绿=吉方）",
+                        "宅之宫位（赤=凶方 翠=吉方）",
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -56,50 +56,42 @@ fun ReportScreen(onBack: () -> Unit) {
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
                     Text(
-                        "■ 绿=吉方 ■ 红=凶方  ● 绿点=吉位物体 ● 红点=凶位物体  ×=未识别  ┄→=整改移动目标",
+                        "■ 翠=吉方 ■ 赤=凶方  ● 翠点=吉位之物 ● 赤点=凶位之物  ┄→=化解迁置之处",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
                     )
                 }
-                // 命卦 + 北向
+                // 命卦 + 罗盘
                 result.gua?.let { gua ->
                     Section("命卦", Color(0xFF2E7D32)) {
                         Text(gua.summary, style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "房间场景：${AppState.sceneName()}（命中按场景相关性排序）",
+                            "居所类别：${AppState.sceneName()}",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
-                Section("北向", Color(0xFF2F6B3A)) {
-                    Text(if (result.northSet) "已校准" else "未校准", style = MaterialTheme.typography.bodyMedium)
+                Section("罗盘", Color(0xFF2F6B3A)) {
+                    Text(if (result.northSet) "已正" else "未正", style = MaterialTheme.typography.bodyMedium)
                 }
-                if (result.unknownCount > 0) {
-                    Section("未识别物体", Color(0xFF757575)) {
-                        Text(
-                            "${result.unknownCount} 个检测未落入判断类别（分类置信度不足），不计入风水分析。",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-                // 物体清单
-                Section("识别物体（${result.objects.size}）", Color(0xFF2F6B3A)) {
+
+                Section("所陈器物（${result.objects.size}）", Color(0xFF2F6B3A)) {
                     if (result.objects.isEmpty()) {
-                        Text("未识别到物体", style = MaterialTheme.typography.bodyMedium)
+                        Text("未辨得器物", style = MaterialTheme.typography.bodyMedium)
                     } else {
                         result.objects.forEach { o ->
                             Text(
-                                "${o.type} · ${o.sector}方位 (${"%.1f".format(o.x)}, ${"%.1f".format(o.z)})",
+                                "${typeNameZH(o.type)} · ${o.sector}方位 (${"%.1f".format(o.x)}, ${"%.1f".format(o.z)})",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
                 }
-                // 凶/平（需整改）——按场景相关性+严重度排序
+                // 凶/平（需化解）——按场景相关性+严重度排序
                 if (result.badHits.isNotEmpty()) {
-                    Section("问题与整改（${result.badHits.size}）", Color(0xFFC0392B)) {
+                    Section("凶煞与化解（${result.badHits.size}）", Color(0xFFC0392B)) {
                         result.badHits.sortedWith(
                             compareByDescending<RuleCard> { sceneRelevance(it) }
                                 .thenByDescending { sevRank(it.severity) }
@@ -115,11 +107,11 @@ fun ReportScreen(onBack: () -> Unit) {
                         ).forEach { hit -> RuleCardView(hit) }
                     }
                 }
-                // 整改方案（L1 移动）
+                // 化解之法（移动调整）
                 result.plan?.let { plan ->
-                    Section("整改方案（L1 移动）", Color(0xFF1565C0)) {
+                    Section("化解之法", Color(0xFF1565C0)) {
                         if (plan.actions.isEmpty() && plan.remainingViolations.isEmpty()) {
-                            Text("无需移动（当前布局无待消除凶势）", style = MaterialTheme.typography.bodyMedium)
+                            Text("无需迁动（当前陈设已无凶势）", style = MaterialTheme.typography.bodyMedium)
                         } else {
                             plan.actions.forEach { a ->
                                 Text(
@@ -136,7 +128,7 @@ fun ReportScreen(onBack: () -> Unit) {
                             }
                             if (plan.remainingViolations.isNotEmpty()) {
                                 Text(
-                                    "仍有 ${plan.remainingViolations.size} 项未消除（${plan.remainingViolations.joinToString(",")}），需遮挡/改造（L2/L3）",
+                                    "仍有 ${plan.remainingViolations.size} 项未化解（${plan.remainingViolations.joinToString(",")}），宜以遮挡或改造之法待之",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -147,7 +139,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 }
                 if (result.hits.isEmpty()) {
                     Text(
-                        "当前未触发规则。可能因素：命卦未设置、北向未校准，或扫描环境为开放空间（卦位/墙邻判定有限）。",
+                        "当前未触发吉凶。或命卦未定、罗盘未正，抑或所居为开放之域（卦位/墙邻难判）。",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -252,7 +244,7 @@ private fun RuleCardView(hit: RuleCard) {
                 }
                 if (hit.remedy.isNotEmpty()) {
                     Text(
-                        "整改建议：" + hit.remedy.joinToString("；"),
+                        "趋避之法：" + hit.remedy.joinToString("；"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp)
@@ -260,7 +252,7 @@ private fun RuleCardView(hit: RuleCard) {
                 }
                 hit.evidence.forEach { e ->
                     Text(
-                        "原文（${e.book}${if (e.chapter.isNotEmpty()) "·${e.chapter}" else ""}）：${e.original}",
+                        "典出（${e.book}${if (e.chapter.isNotEmpty()) "·${e.chapter}" else ""}）：${e.original}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.padding(top = 6.dp)
