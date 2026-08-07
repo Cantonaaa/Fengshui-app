@@ -1,17 +1,26 @@
 package com.fengshui.app
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -49,7 +58,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 }
                 // 命卦 + 北向
                 result.gua?.let { gua ->
-                    Section("命卦") {
+                    Section("命卦", Color(0xFF2E7D32)) {
                         Text(gua.summary, style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "房间场景：${AppState.sceneName()}（命中按场景相关性排序）",
@@ -58,11 +67,11 @@ fun ReportScreen(onBack: () -> Unit) {
                         )
                     }
                 }
-                Section("北向") {
+                Section("北向", Color(0xFF2F6B3A)) {
                     Text(if (result.northSet) "已校准" else "未校准", style = MaterialTheme.typography.bodyMedium)
                 }
                 if (result.unknownCount > 0) {
-                    Section("未识别物体") {
+                    Section("未识别物体", Color(0xFF757575)) {
                         Text(
                             "${result.unknownCount} 个检测未落入判断类别（分类置信度不足），不计入风水分析。",
                             style = MaterialTheme.typography.bodySmall
@@ -70,7 +79,7 @@ fun ReportScreen(onBack: () -> Unit) {
                     }
                 }
                 // 物体清单
-                Section("识别物体（${result.objects.size}）") {
+                Section("识别物体（${result.objects.size}）", Color(0xFF2F6B3A)) {
                     if (result.objects.isEmpty()) {
                         Text("未识别到物体", style = MaterialTheme.typography.bodyMedium)
                     } else {
@@ -84,7 +93,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 }
                 // 凶/平（需整改）——按场景相关性+严重度排序
                 if (result.badHits.isNotEmpty()) {
-                    Section("问题与整改（${result.badHits.size}）") {
+                    Section("问题与整改（${result.badHits.size}）", Color(0xFFC0392B)) {
                         result.badHits.sortedWith(
                             compareByDescending<RuleCard> { sceneRelevance(it) }
                                 .thenByDescending { sevRank(it.severity) }
@@ -93,7 +102,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 }
                 // 吉（正面）——按场景相关性+严重度排序
                 if (result.goodHits.isNotEmpty()) {
-                    Section("吉象（${result.goodHits.size}）") {
+                    Section("吉象（${result.goodHits.size}）", Color(0xFF2E7D32)) {
                         result.goodHits.sortedWith(
                             compareByDescending<RuleCard> { sceneRelevance(it) }
                                 .thenByDescending { sevRank(it.severity) }
@@ -102,7 +111,7 @@ fun ReportScreen(onBack: () -> Unit) {
                 }
                 // 整改方案（L1 移动）
                 result.plan?.let { plan ->
-                    Section("整改方案（L1 移动）") {
+                    Section("整改方案（L1 移动）", Color(0xFF1565C0)) {
                         if (plan.actions.isEmpty() && plan.remainingViolations.isEmpty()) {
                             Text("无需移动（当前布局无待消除凶势）", style = MaterialTheme.typography.bodyMedium)
                         } else {
@@ -161,37 +170,96 @@ private fun sevRank(s: String): Int = when (s) {
     "大凶" -> 5; "凶" -> 4; "平" -> 3; "吉" -> 2; "大吉" -> 1; else -> 0
 }
 
+/** 严重度颜色。 */
+private fun sevColor(s: String): Color = when (s) {
+    "大凶" -> Color(0xFFB71C1C)
+    "凶" -> Color(0xFFD84315)
+    "平" -> Color(0xFF616161)
+    "吉" -> Color(0xFF2E7D32)
+    "大吉" -> Color(0xFF1B5E20)
+    else -> Color(0xFF757575)
+}
+
 /** 命中与当前场景的相关度（require 命中场景偏好类型数）。 */
 private fun sceneRelevance(hit: RuleCard): Int =
     hit.condition.require.count { it in AppState.sceneTypes() }
 
 @Composable
+private fun Section(title: String, tint: Color, content: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.padding(top = 20.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .background(tint, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.Bold)
+        }
+    }
+    content()
+}
+
+@Composable
+private fun SeverityBadge(severity: String) {
+    val color = sevColor(severity)
+    Text(
+        severity,
+        modifier = Modifier
+            .background(color, RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        color = Color.White,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold
+    )
+}
+
+@Composable
 private fun RuleCardView(hit: RuleCard) {
     val isDerived = hit.evidence.any { it.reliability == "推演引申" }
-    Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-        Column(Modifier.padding(12.dp)) {
-            Text(
-                "[${hit.severity}] ${hit.title}${if (isDerived) "（推演）" else ""}",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            if (hit.summary.isNotEmpty()) {
-                Text(hit.summary, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-            }
-            if (hit.remedy.isNotEmpty()) {
-                Text(
-                    "整改建议：" + hit.remedy.joinToString("；"),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            hit.evidence.forEach { e ->
-                Text(
-                    "原文（${e.book}${if (e.chapter.isNotEmpty()) "·${e.chapter}" else ""}）：${e.original}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+    val accent = sevColor(hit.severity)
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(Modifier.fillMaxWidth()) {
+            // 左侧严重度色条
+            Box(Modifier.width(6.dp).fillMaxHeight().background(accent))
+            Column(Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SeverityBadge(hit.severity)
+                    Text(
+                        hit.title + if (isDerived) "（推演）" else "",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+                if (hit.summary.isNotEmpty()) {
+                    Text(hit.summary, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
+                }
+                if (hit.remedy.isNotEmpty()) {
+                    Text(
+                        "整改建议：" + hit.remedy.joinToString("；"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+                hit.evidence.forEach { e ->
+                    Text(
+                        "原文（${e.book}${if (e.chapter.isNotEmpty()) "·${e.chapter}" else ""}）：${e.original}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
             }
         }
     }
