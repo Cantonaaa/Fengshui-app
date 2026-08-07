@@ -3,162 +3,497 @@
     "ruleId": "zfj_bed_07",
     "title": "床忌安在凶方",
     "severity": "凶",
-    "schools": ["理气"],
+    "schools": [
+      "理气"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "bed": 1 }, "spatial": { "bed": ["inKillSector"] } },
+    "condition": {
+      "require": {
+        "bed": 1
+      },
+      "spatial": {
+        "bed": [
+          "inKillSector"
+        ]
+      }
+    },
     "finding": {
       "summary": "安床宜择宅之吉方吉间，合本人生位；床安在命卦凶方（绝命/五鬼/六煞/祸害）则不利安寝、损福。",
-      "remedy": ["将床移至命卦吉方（生气/延年/天乙/伏位）", "无法移动时以屏风、帐幔遮挡凶方一侧"]
+      "remedy": [
+        "将床移至命卦吉方（生气/延年/天乙/伏位）",
+        "无法移动时以屏风、帐幔遮挡凶方一侧"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "卧房", "quoteKey": "zfj_bed_01", "original": "安床，宜擇宅之吉方吉間，房門，又宜得間星之生旺，合床之生位", "modern": "安床应选宅中吉方吉间，并配合本命生旺之星位，与床的生位相合。", "reliability": "直接明确" }
+      {
+        "book": "宅法举隅",
+        "chapter": "卧房",
+        "quoteKey": "zfj_bed_01",
+        "original": "安床，宜擇宅之吉方吉間，房門，又宜得間星之生旺，合床之生位",
+        "modern": "安床应选宅中吉方吉间，并配合本命生旺之星位，与床的生位相合。",
+        "reliability": "直接明确"
+      }
     ]
   },
   {
     "ruleId": "zfj_zhu_07",
     "title": "灶宜坐凶向吉·忌安吉方",
     "severity": "凶",
-    "schools": ["理气"],
+    "schools": [
+      "理气"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "stove": 1 }, "spatial": { "stove": ["inGoodSector"] } },
+    "condition": {
+      "require": {
+        "stove": 1
+      },
+      "spatial": {
+        "stove": [
+          "inGoodSector"
+        ]
+      }
+    },
     "finding": {
       "summary": "厨房属火，宜压命主四凶方而向吉方（压煞向生）；灶安在吉方反而不利。",
-      "remedy": ["将灶移至命卦凶方（绝命/五鬼/六煞/祸害），灶口向吉方", "厨房位置在吉方时可考虑调整门向与灶向"]
+      "remedy": [
+        "将灶移至命卦凶方（绝命/五鬼/六煞/祸害），灶口向吉方",
+        "厨房位置在吉方时可考虑调整门向与灶向"
+      ]
     },
     "evidence": [
-      { "book": "阳宅十书", "chapter": "论厨灶", "quoteKey": "yszs_zhu_02", "original": "火淹即是廚房止宜在宅凶方不宜在吉方", "modern": "厨房属火，只宜安在宅之凶方，不宜在吉方。", "reliability": "直接明确" },
-      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_01", "original": "灶座，宜壓主命四凶方，灶門，宜向主命四吉方，謂之壓煞向生", "modern": "灶座宜压本命四凶方，灶门宜向本命四吉方，这叫压煞向生。", "reliability": "直接明确" }
+      {
+        "book": "阳宅十书",
+        "chapter": "论厨灶",
+        "quoteKey": "yszs_zhu_02",
+        "original": "火淹即是廚房止宜在宅凶方不宜在吉方",
+        "modern": "厨房属火，只宜安在宅之凶方，不宜在吉方。",
+        "reliability": "直接明确"
+      },
+      {
+        "book": "宅法举隅",
+        "chapter": "灶",
+        "quoteKey": "zfj_zhu_01",
+        "original": "灶座，宜壓主命四凶方，灶門，宜向主命四吉方，謂之壓煞向生",
+        "modern": "灶座宜压本命四凶方，灶门宜向本命四吉方，这叫压煞向生。",
+        "reliability": "直接明确"
+      }
     ]
   },
   {
     "ruleId": "zfj_ce_04",
     "title": "厕宜在凶方·忌吉方文昌",
     "severity": "凶",
-    "schools": ["理气"],
+    "schools": [
+      "理气"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "toilet": 1 }, "spatial": { "toilet": ["inGoodSector"] } },
+    "condition": {
+      "require": {
+        "toilet": 1
+      },
+      "spatial": {
+        "toilet": [
+          "inGoodSector"
+        ]
+      }
+    },
     "finding": {
       "summary": "作厕忌在天门、文昌、将星、华盖及关煞等方，宜设于宅之凶方以泄煞；厕安吉方文昌位则污秽吉气。",
-      "remedy": ["将厕移至命卦凶方", "忌将厕设于东南文昌位等吉方"]
+      "remedy": [
+        "将厕移至命卦凶方",
+        "忌将厕设于东南文昌位等吉方"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "厕", "quoteKey": "zfj_ce_01", "original": "作廁，忌在宅基來脈處、及干為天門、巽為文昌、四正為將星、四墓為華蓋、與關煞等方", "modern": "建厕忌在宅基来脉处，以及干位天门、巽位文昌、四正将星、四墓华盖与关煞等方位。", "reliability": "推演引申" }
+      {
+        "book": "宅法举隅",
+        "chapter": "厕",
+        "quoteKey": "zfj_ce_01",
+        "original": "作廁，忌在宅基來脈處、及干為天門、巽為文昌、四正為將星、四墓為華蓋、與關煞等方",
+        "modern": "建厕忌在宅基来脉处，以及干位天门、巽位文昌、四正将星、四墓华盖与关煞等方位。",
+        "reliability": "推演引申"
+      }
     ]
   },
   {
     "ruleId": "zfj_bed_08",
     "title": "床忌床头对门·外气冲逼",
     "severity": "凶",
-    "schools": ["形法"],
+    "schools": [
+      "形法"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "bed": 1 }, "spatial": { "bed": ["facesDoor"] } },
+    "condition": {
+      "require": {
+        "bed": 1
+      },
+      "spatial": {
+        "bed": [
+          "facesDoor"
+        ]
+      }
+    },
     "finding": {
       "summary": "床头边开门则外气冲逼，床正对门则气冲不藏，不利安寝。",
-      "remedy": ["调整床头方向，避开房门直冲", "床头对门处设屏风或帘遮挡"]
+      "remedy": [
+        "调整床头方向，避开房门直冲",
+        "床头对门处设屏风或帘遮挡"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "卧房", "quoteKey": "zfj_bed_03", "original": "床頭邊開門，外氣衝逼", "modern": "床头旁边开门，外气就会冲逼床。", "reliability": "直接明确" }
+      {
+        "book": "宅法举隅",
+        "chapter": "卧房",
+        "quoteKey": "zfj_bed_03",
+        "original": "床頭邊開門，外氣衝逼",
+        "modern": "床头旁边开门，外气就会冲逼床。",
+        "reliability": "直接明确"
+      }
     ]
   },
   {
     "ruleId": "zfj_sofa_03",
     "title": "主座（沙发）忌冲门·背后忌空",
     "severity": "凶",
-    "schools": ["形法"],
+    "schools": [
+      "形法"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "sofa": 1 }, "spatial": { "sofa": ["facesDoor"] } },
+    "condition": {
+      "require": {
+        "sofa": 1
+      },
+      "spatial": {
+        "sofa": [
+          "facesDoor"
+        ]
+      }
+    },
     "finding": {
       "summary": "主座（沙发）如主官之位，忌门路直冲、背后空虚；沙发对门则坐不安稳，背后无靠则气散。",
-      "remedy": ["沙发避开房门直冲方向", "沙发靠墙摆放，背后有靠"]
+      "remedy": [
+        "沙发避开房门直冲方向",
+        "沙发靠墙摆放，背后有靠"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "衙署", "quoteKey": "zfj_ys_08", "original": "川堂直長，自外衝內，衙後空虛", "modern": "川堂直长、从外直冲入内，衙署背后空虚，皆不宜。", "reliability": "推演引申" }
+      {
+        "book": "宅法举隅",
+        "chapter": "衙署",
+        "quoteKey": "zfj_ys_08",
+        "original": "川堂直長，自外衝內，衙後空虛",
+        "modern": "川堂直长、从外直冲入内，衙署背后空虚，皆不宜。",
+        "reliability": "推演引申"
+      }
     ]
   },
   {
     "ruleId": "zfj_bed_09",
     "title": "床忌近灶·冲关",
     "severity": "凶",
-    "schools": ["五行"],
+    "schools": [
+      "五行"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "bed": 1 }, "spatial": { "bed": ["nearStove"] } },
+    "condition": {
+      "require": {
+        "bed": 1
+      },
+      "spatial": {
+        "bed": [
+          "nearStove"
+        ]
+      }
+    },
     "finding": {
       "summary": "灶位与床位忌相反，为冲关；床近灶则火气熏蒸、五行相冲，不利安寝与健康。",
-      "remedy": ["拉开床与灶的距离", "灶与床分置不同区域，避免相对或相邻"]
+      "remedy": [
+        "拉开床与灶的距离",
+        "灶与床分置不同区域，避免相对或相邻"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "灶位与床位忌相冲，那是冲关，宜相生才吉。", "reliability": "直接明确" },
-      { "book": "宅法举隅", "chapter": "卧房", "quoteKey": "zfj_bed_03", "original": "床前有灶", "modern": "床前不宜有灶。", "reliability": "直接明确" }
+      {
+        "book": "宅法举隅",
+        "chapter": "灶",
+        "quoteKey": "zfj_zhu_05",
+        "original": "灶位與床位，忌相反，為衝關，宜相生為吉",
+        "modern": "灶位与床位忌相冲，那是冲关，宜相生才吉。",
+        "reliability": "直接明确"
+      },
+      {
+        "book": "宅法举隅",
+        "chapter": "卧房",
+        "quoteKey": "zfj_bed_03",
+        "original": "床前有灶",
+        "modern": "床前不宜有灶。",
+        "reliability": "直接明确"
+      }
     ]
   },
   {
     "ruleId": "zfj_ce_07",
     "title": "厕勿近卧房",
     "severity": "凶",
-    "schools": ["形法"],
+    "schools": [
+      "形法"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "toilet": 1 }, "spatial": { "toilet": ["nearBedroom"] } },
+    "condition": {
+      "require": {
+        "toilet": 1
+      },
+      "spatial": {
+        "toilet": [
+          "nearBedroom"
+        ]
+      }
+    },
     "finding": {
       "summary": "作厕勿近灶、勿近卧房；厕近卧房则秽气侵扰安寝，不利健康。",
-      "remedy": ["将厕与卧房隔离，保持距离", "卧房旁设厕则加强通风与隔断"]
+      "remedy": [
+        "将厕与卧房隔离，保持距离",
+        "卧房旁设厕则加强通风与隔断"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "厕", "quoteKey": "zfj_ce_03", "original": "勿近灶、近房", "modern": "厕所不宜靠近灶、靠近卧房。", "reliability": "直接明确" }
+      {
+        "book": "宅法举隅",
+        "chapter": "厕",
+        "quoteKey": "zfj_ce_03",
+        "original": "勿近灶、近房",
+        "modern": "厕所不宜靠近灶、靠近卧房。",
+        "reliability": "直接明确"
+      }
     ]
   },
   {
     "ruleId": "zfj_zhu_09",
     "title": "灶（火）忌安克火之方（坎水）",
     "severity": "凶",
-    "schools": ["五行"],
+    "schools": [
+      "五行"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "stove": 1 }, "spatial": { "stove": ["elementClashWithSector"] } },
+    "condition": {
+      "require": {
+        "stove": 1
+      },
+      "spatial": {
+        "stove": [
+          "elementClashWithSector"
+        ]
+      }
+    },
     "finding": {
       "summary": "灶属火，五行忌相冲；灶安于克火之方（北方坎水、西南/东北土、西/西北金），火受克则不利。宜合方位五行，忌相冲。",
-      "remedy": ["将灶移至与火相生或相合之方位", "忌灶在坎北水方"]
+      "remedy": [
+        "将灶移至与火相生或相合之方位",
+        "忌灶在坎北水方"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生忌相冲。", "reliability": "推演引申" }
+      {
+        "book": "宅法举隅",
+        "chapter": "灶",
+        "quoteKey": "zfj_zhu_05",
+        "original": "灶位與床位，忌相反，為衝關，宜相生為吉",
+        "modern": "五行宜相生忌相冲。",
+        "reliability": "推演引申"
+      }
     ]
   },
   {
     "ruleId": "zfj_ce_06",
     "title": "厕（水）忌安火方（离）",
     "severity": "凶",
-    "schools": ["五行"],
+    "schools": [
+      "五行"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "toilet": 1 }, "spatial": { "toilet": ["elementClashWithSector"] } },
+    "condition": {
+      "require": {
+        "toilet": 1
+      },
+      "spatial": {
+        "toilet": [
+          "elementClashWithSector"
+        ]
+      }
+    },
     "finding": {
       "summary": "厕属水，五行忌相冲；厕安于克水或水火相冲之方（南方离火），不利。",
-      "remedy": ["将厕移至凶方且与方位五行相宜处", "忌厕在离南火方"]
+      "remedy": [
+        "将厕移至凶方且与方位五行相宜处",
+        "忌厕在离南火方"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "灶", "quoteKey": "zfj_zhu_05", "original": "灶位與床位，忌相反，為衝關，宜相生為吉", "modern": "五行宜相生忌相冲。", "reliability": "推演引申" }
+      {
+        "book": "宅法举隅",
+        "chapter": "灶",
+        "quoteKey": "zfj_zhu_05",
+        "original": "灶位與床位，忌相反，為衝關，宜相生為吉",
+        "modern": "五行宜相生忌相冲。",
+        "reliability": "推演引申"
+      }
     ]
   },
   {
     "ruleId": "zfj_plant_04",
     "title": "盆栽（木）忌安金方（乾兑）",
     "severity": "凶",
-    "schools": ["五行"],
+    "schools": [
+      "五行"
+    ],
     "category": "furniture",
     "status": "active",
-    "condition": { "require": { "plant": 1 }, "spatial": { "plant": ["elementClashWithSector"] } },
+    "condition": {
+      "require": {
+        "plant": 1
+      },
+      "spatial": {
+        "plant": [
+          "elementClashWithSector"
+        ]
+      }
+    },
     "finding": {
       "summary": "盆栽属木，五行忌相冲；木安于金方（西兑、西北乾）则金克木，不利生气。宜木方（东、东南）或与木相生之方。",
-      "remedy": ["将盆栽移至东方、东南方等木方", "忌盆栽在兑西、乾西北金方"]
+      "remedy": [
+        "将盆栽移至东方、东南方等木方",
+        "忌盆栽在兑西、乾西北金方"
+      ]
     },
     "evidence": [
-      { "book": "宅法举隅", "chapter": "仓库", "quoteKey": "zfj_ck_01", "original": "倉庫屬土，宜在土方，不宜在木方", "modern": "物属五行，各宜其方，忌相克。", "reliability": "推演引申" }
+      {
+        "book": "宅法举隅",
+        "chapter": "仓库",
+        "quoteKey": "zfj_ck_01",
+        "original": "倉庫屬土，宜在土方，不宜在木方",
+        "modern": "物属五行，各宜其方，忌相克。",
+        "reliability": "推演引申"
+      }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_10",
+    "title": "办公桌忌背门冲·门为咽喉",
+    "severity": "凶",
+    "schools": [
+      "形法"
+    ],
+    "category": "furniture",
+    "status": "active",
+    "condition": {
+      "require": {
+        "desk": 1
+      },
+      "spatial": {
+        "desk": [
+          "facesDoor"
+        ]
+      }
+    },
+    "finding": {
+      "summary": "办公桌（主位）如主官之位，忌背门、对门；门路直冲则坐不安稳、事不专一。",
+      "remedy": [
+        "办公桌避开房门直冲方向",
+        "办公桌背靠实墙，前方开阔"
+      ]
+    },
+    "evidence": [
+      {
+        "book": "宅法举隅",
+        "chapter": "衙署",
+        "quoteKey": "zfj_ys_08",
+        "original": "內衙，與住宅同論，以內宅門為咽喉",
+        "modern": "办公之处如住宅，以门户为咽喉，忌冲。",
+        "reliability": "直接明确"
+      }
+    ]
+  },
+  {
+    "ruleId": "zfj_ys_11",
+    "title": "办公桌/书房忌近秽（厕）",
+    "severity": "凶",
+    "schools": [
+      "形法"
+    ],
+    "category": "furniture",
+    "status": "active",
+    "condition": {
+      "require": {
+        "desk": 1
+      },
+      "spatial": {
+        "desk": [
+          "nearToilet"
+        ]
+      }
+    },
+    "finding": {
+      "summary": "书室/办公桌忌近厕所污秽之气，秽气冲扰则心神不宁、不利读书办公。",
+      "remedy": [
+        "办公桌与厕所保持距离",
+        "厕与办公区设隔断通风"
+      ]
+    },
+    "evidence": [
+      {
+        "book": "宅法举隅",
+        "chapter": "厕",
+        "quoteKey": "zfj_ce_03",
+        "original": "勿近灶、近房",
+        "modern": "厕所不宜近灶、近房（推及不宜近书房办公处）。",
+        "reliability": "推演引申"
+      }
+    ]
+  },
+  {
+    "ruleId": "zfj_dtable_02",
+    "title": "餐桌忌近秽（厕）",
+    "severity": "凶",
+    "schools": [
+      "形法"
+    ],
+    "category": "furniture",
+    "status": "active",
+    "condition": {
+      "require": {
+        "dining": 1
+      },
+      "spatial": {
+        "dining": [
+          "nearToilet"
+        ]
+      }
+    },
+    "finding": {
+      "summary": "进食之处忌近厕所秽气，秽气相侵则食不安、损脾胃。",
+      "remedy": [
+        "餐桌与厕所保持距离",
+        "就餐区避开厕所门户视线"
+      ]
+    },
+    "evidence": [
+      {
+        "book": "宅法举隅",
+        "chapter": "厕",
+        "quoteKey": "zfj_ce_03",
+        "original": "勿近灶、近房",
+        "modern": "秽气忌近居处，进食处同理宜远离。",
+        "reliability": "推演引申"
+      }
     ]
   }
 ]
