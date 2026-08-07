@@ -52,9 +52,9 @@ class PointCloudRecorder(
         return if (p.isFinite()) p else null
     }
 
-    /** 每帧调用；内部按 sampleEveryNFrames 与 stride 降采样。 */
+    /** 每帧调用；内部按 sampleEveryNFrames 与 stride 降采样。stride=2 加密大房间地板点。 */
     @Synchronized
-    fun onFrame(frame: Frame, sampleEveryNFrames: Int = 5, stride: Int = 3) {
+    fun onFrame(frame: Frame, sampleEveryNFrames: Int = 5, stride: Int = 2) {
         frameCount++
         if (frameCount % sampleEveryNFrames != 0) return
         if (points.size >= maxPoints) return

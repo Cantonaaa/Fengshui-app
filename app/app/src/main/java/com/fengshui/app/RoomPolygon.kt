@@ -95,10 +95,14 @@ object RoomPolygon {
         val keep2 = cullGhost(keep)
         if (keep2.size < 3) return null
 
-        // 4) 最小面积外接矩形（长方形房间产出干净四边形；比凸包面积更准）
+        // 4) 形状自适应：近矩形用最小外接矩形（干净四边形），异形用凸包（避免矩形过拟合凹角）
         val rect = fitMinAreaRect(keep2)
-        val area = polygonArea(rect)
-        return Polygon(rect, area)
+        val hull = convexHull(keep2)
+        val rectArea = polygonArea(rect)
+        val hullArea = polygonArea(hull)
+        val shape = if (hullArea > 0f && hullArea / rectArea > 0.85f) rect else hull
+        val area = polygonArea(shape)
+        return Polygon(shape, area)
     }
 
     /**

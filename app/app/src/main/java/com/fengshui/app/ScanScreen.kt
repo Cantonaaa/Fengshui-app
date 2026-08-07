@@ -93,6 +93,12 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var circleDone by remember { mutableStateOf(false) }
     var processing by remember { mutableStateOf(false) }
     var procProgress by remember { mutableIntStateOf(0) }
+    // 小地图 / 覆盖度
+    var coveragePct by remember { mutableIntStateOf(0) }
+    var livePolygon by remember { mutableStateOf<List<Pt>?>(null) }
+    var liveFrames by remember { mutableStateOf<List<Pair<Double, Double>>>(emptyList()) }
+    var currentHeading by remember { mutableStateOf(0.0) }
+    var pendingConfirm by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -134,6 +140,26 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
         } else {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
+                    if (processing) {
+                        // 起批中：隐藏摄像头，用首页背景 + 轮播古文
+                        Box(
+                            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                TheoryCarousel()
+                                Text(
+                                    "起批中 $procProgress%",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(top = 12.dp)
+                                )
+                            }
+                        }
+                    } else {
                     ARScene(
                         modifier = Modifier.fillMaxSize(),
                         sessionConfiguration = { session, config ->
@@ -177,26 +203,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             }
                         }
                     )
-                    if (processing) {
-                        Column(
-                            Modifier
-                                .align(Alignment.Center)
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            TheoryCarousel()
-                            Text(
-                                "起批中 $procProgress%",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Color.White,
-                                modifier = Modifier
-                                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    .padding(top = 4.dp)
-                            )
-                        }
-                    } else if (!northSet) {
+                    if (!northSet) {
                         CalibrationGuide(
                             azimuthText = azimuthDeg,
                             onCalibrate = { calibrateNorth() },
@@ -222,7 +229,19 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             CompassView(azimuthDeg, northSet)
                         }
                     }
-                }
+                    // 小地图（右下角，相机朝向上）
+                    MiniMapView(
+                        keyframes = liveFrames,
+                        polygon = livePolygon,
+                        cameraPos = latestSnap[0]?.let { it.ox.toDouble() to it.oz.toDouble() }
+                            ?: (0.0 to 0.0),
+                        headingRad = currentHeading,
+                        coveragePct = coveragePct,
+                        coverageRadius = 3.0,
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 10.dp)
+                    )
+                    }
+                    }
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceVariant
@@ -233,7 +252,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                     ) {
                         Text(status, style = MaterialTheme.typography.bodySmall)
                         Text(
-                            "徐行绕室，环顾一周",
+                            "先沿墙绕行一周（覆边缘器物），再室内穿行（覆中心器物）",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -249,6 +268,13 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                 val gua = AppState.guaInfo
                                 if (AppState.northAngle == null) { status = "请先定向正盘"; return@Button }
                                 if (gua == null) { status = "请先定生辰（首页）"; return@Button }
+                                // 覆盖不足：提示一次，再点确认起批
+                                if (coveragePct < 75 && !pendingConfirm) {
+                                    pendingConfirm = true
+                                    status = "覆盖仅 $coveragePct%（中心/边角或有未及），建议补扫；再点一次确认起批"
+                                    return@Button
+                                }
+                                pendingConfirm = false
                                 processing = true
                                 procProgress = 0
                                 status = "起批中..."
@@ -344,6 +370,25 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
         while (true) {
             azimuthDeg = (((northHelper.azimuth() * 180 / Math.PI).roundToInt() + 360) % 360).toString()
             kotlinx.coroutines.delay(200)
+        }
+    }
+
+    // 小地图：后台节流重算墙线 + 覆盖度（不阻塞 AR 线程）
+    LaunchedEffect(arcoreReady) {
+        while (arcoreReady && !processing) {
+            kotlinx.coroutines.withContext(Dispatchers.Default) {
+                val snap = latestSnap[0]
+                currentHeading = if (snap != null) ObjectLocalizer.cameraForwardHeading(snap) else currentHeading
+                val poly = RoomPolygon.buildPolygon(recorder.getPoints())
+                    ?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
+                livePolygon = poly
+                if (poly != null) {
+                    val frames = frameBuffer.all()
+                    liveFrames = frames.map { it.snap.ox.toDouble() to it.snap.oz.toDouble() }
+                    coveragePct = ScanCoverage.coveragePct(liveFrames, poly, 3.0)
+                }
+            }
+            kotlinx.coroutines.delay(2500)
         }
     }
 }
