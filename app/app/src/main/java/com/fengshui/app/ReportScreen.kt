@@ -31,6 +31,21 @@ fun ReportScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(top = 16.dp)
                 )
             } else {
+                // 宫位图（房间 + 八卦吉凶方 + 物体点位）
+                if (result.polygon.size >= 3) {
+                    Text(
+                        "房间宫位图（红=凶方 绿=吉方）",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    BaguaMapView(
+                        polygon = result.polygon,
+                        objects = result.objects,
+                        northAngle = AppState.northAngle ?: 0.0,
+                        gua = result.gua,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    )
+                }
                 // 命卦 + 北向
                 result.gua?.let { gua ->
                     Section("命卦") { Text(gua.summary, style = MaterialTheme.typography.bodyMedium) }

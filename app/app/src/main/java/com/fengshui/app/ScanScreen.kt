@@ -309,7 +309,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                             val plan = solveRemediation(facts, rules, badHits, AppState.guaInfo!!)
                                             val infos = sectorInfo(objects, poly, AppState.northAngle!!)
                                             AppState.analysisResult = AnalysisResult(
-                                                AppState.guaInfo, true, objects.size, hits, infos, plan, AppState.unknownCount
+                                                AppState.guaInfo, true, objects.size, hits, infos, plan, AppState.unknownCount, poly
                                             )
                                             withContext(Dispatchers.Main) {
                                                 status = "分析完成：命中 ${hits.size} 条规则"

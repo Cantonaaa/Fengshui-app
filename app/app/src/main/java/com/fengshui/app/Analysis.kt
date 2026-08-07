@@ -47,7 +47,8 @@ data class AnalysisResult(
     val hits: List<RuleCard>,
     val objects: List<ObjInfo>,
     val plan: RemediationPlan? = null,
-    val unknownCount: Int = 0
+    val unknownCount: Int = 0,
+    val polygon: List<Pt> = emptyList()
 ) {
     val goodHits: List<RuleCard> get() = hits.filter { it.severity == "吉" }
     val badHits: List<RuleCard> get() = hits.filter { it.severity != "吉" }
