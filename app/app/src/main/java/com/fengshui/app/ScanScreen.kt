@@ -8,17 +8,23 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -204,63 +210,52 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             }
                         }
                     )
-                    Column(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
-                        Text(
-                            "检测到平面: $planeCount",
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White
-                        )
-                        Text(
-                            "点云点数: $pointCount",
-                            modifier = Modifier
-                                .padding(top = 4.dp)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White
-                        )
-                        Text(
-                            "识别物体: ${if (detectorLoaded) objCount.toString() else "模型未就绪"}",
-                            modifier = Modifier
-                                .padding(top = 4.dp)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White
-                        )
-                        Text(
-                            "磁北: $azimuthDeg° ${if (northSet) "·已校准" else "·未校准"}",
-                            modifier = Modifier
-                                .padding(top = 4.dp)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White
-                        )
-                        Text(
-                            "未识别: $unknownCount",
-                            modifier = Modifier
-                                .padding(top = 4.dp)
-                                .background(Color.Black.copy(alpha = 0.5f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            color = Color.White
-                        )
+                    Row(
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 12.dp, start = 12.dp, end = 12.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            OverlayChip("平面 $planeCount")
+                            OverlayChip("点云 $pointCount")
+                            OverlayChip("物体 $objCount")
+                            OverlayChip("未识别 $unknownCount")
+                            OverlayChip(
+                                if (northSet) "北向已校准" else "磁北 $azimuthDeg°",
+                                accent = if (northSet)
+                                    androidx.compose.ui.graphics.Color(0xFF8FD4A0)
+                                else androidx.compose.ui.graphics.Color.White
+                            )
+                        }
+                        CompassView(azimuthDeg, northSet)
                     }
                 }
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceVariant
                 ) {
-                    Column(Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
-                        Text(status)
-                        Text("缓慢移动手机，环绕房间完整走一圈（A1.2 点云采集）")
-                        Button(
+                    Column(
+                        Modifier.padding(12.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(status, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "缓慢移动手机，环绕房间完整走一圈",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        val btnShape = RoundedCornerShape(12.dp)
+                        OutlinedButton(
                             onClick = {
                                 val f = recorder.exportPly(context)
                                 status = if (f != null) "已导出: ${f.name}" else "尚无点云"
                             },
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            shape = btnShape
                         ) { Text("导出点云 (PLY)") }
-                        Button(
+                        OutlinedButton(
                             onClick = {
                                 val poly = RoomPolygon.buildPolygon(recorder.getPoints())
                                 status = if (poly != null) {
@@ -270,7 +265,8 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                 }
                                 Log.i(TAG, status)
                             },
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            shape = btnShape
                         ) { Text("生成户型 (面积)") }
                         Button(
                             onClick = {
@@ -284,7 +280,8 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                     status = "等待 AR 帧：请把手机朝向磁北（罗盘读数 0°）"
                                 }
                             },
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            shape = btnShape
                         ) { Text(if (northSet) "重新校准北向" else "校准北向（朝向磁北后点击）") }
                         Button(
                             onClick = {
@@ -322,13 +319,13 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                     }
                                 }
                             },
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) { Text("完成扫描并分析") }
-                        Text(
-                            "← 返回",
-                            modifier = Modifier.padding(top = 8.dp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) { Text("完成扫描并分析", style = MaterialTheme.typography.titleSmall) }
+                        TextButton(
+                            onClick = onBack,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) { Text("← 返回首页") }
                     }
                 }
             }

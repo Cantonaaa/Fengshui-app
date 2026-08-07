@@ -55,6 +55,12 @@ fun ReportScreen(onBack: () -> Unit) {
                         plan = result.plan,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
                     )
+                    Text(
+                        "■ 绿=吉方 ■ 红=凶方  ● 绿点=吉位物体 ● 红点=凶位物体  ×=未识别  ┄→=整改移动目标",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                    )
                 }
                 // 命卦 + 北向
                 result.gua?.let { gua ->
