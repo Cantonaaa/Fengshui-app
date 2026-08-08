@@ -136,13 +136,14 @@ fun MiniMapView(
                 // 当前位置（向上箭头 = 相机朝向；地图相机朝上）
                 val cam = toSc(BaguaMap.project(Pt(cameraPos.first, cameraPos.second), center, headingRad))
                 val arrow = Path().apply {
-                    moveTo(cam.x, cam.y - 10f)
-                    lineTo(cam.x - 5.5f, cam.y + 6f)
-                    lineTo(cam.x + 5.5f, cam.y + 6f)
+                    moveTo(cam.x, cam.y - 16f)
+                    lineTo(cam.x - 9f, cam.y + 10f)
+                    lineTo(cam.x + 9f, cam.y + 10f)
                     close()
                 }
+                drawPath(arrow, Color.White.copy(alpha = 0.9f), style = Stroke(width = 3f))  // 白描边提升对比
                 drawPath(arrow, Color(0xFF40C4FF))
-                drawCircle(Color.White, radius = 2.5f, center = cam)
+                drawCircle(Color.White, radius = 4f, center = cam)
             }
             Text(
                 "覆盖 $coveragePct%",

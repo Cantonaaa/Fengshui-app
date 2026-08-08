@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 import com.fengshui.solver.Pt
 import com.fengshui.solver.RemediationPlan
@@ -112,7 +113,7 @@ fun BaguaMapView(
             // 3) 中心
             drawCircle(Color(0x88, 0x88, 0x88), radius = 3f, center = Offset(cx, cy))
 
-            // 4) 物体点位
+            // 4) 物体点位（放大 + 中文标签）
             for (o in objects) {
                 val p = BaguaMap.project(Pt(o.x, o.z), center, northAngle)
                 val pos = toScreen(p)
@@ -121,8 +122,19 @@ fun BaguaMapView(
                     o.sector in good -> Color(0x20, 0x90, 0x40)
                     else -> Color(0x88, 0x88, 0x88)
                 }
-                drawCircle(c, radius = 7f, center = pos)
-                drawCircle(Color.White, radius = 3f, center = pos)
+                drawCircle(c, radius = 10f, center = pos)
+                drawCircle(Color.White, radius = 5f, center = pos)
+                // 中文标签（原生 Canvas，粗体+阴影提升可读性）
+                drawContext.canvas.nativeCanvas.drawText(
+                    typeNameZH(o.type), pos.x + 14f, pos.y + 4f,
+                    android.graphics.Paint().apply {
+                        color = android.graphics.Color.WHITE
+                        textSize = 14f
+                        isAntiAlias = true
+                        typeface = android.graphics.Typeface.DEFAULT_BOLD
+                        setShadowLayer(3f, 0f, 0f, android.graphics.Color.BLACK)
+                    }
+                )
             }
 
             // 5) 整改目标（虚线圈 + 箭头 当前→目标）

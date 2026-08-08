@@ -161,7 +161,7 @@ fun ReportScreen(
                             }
                             if (plan.remainingViolations.isNotEmpty()) {
                                 val titleOf: (String) -> String = { id ->
-                                    result.hits.firstOrNull { it.id == id }?.title?.ifEmpty { id } ?: id
+                                    result.hits.firstOrNull { it.id == id }?.title?.ifEmpty { "相关规则" } ?: "相关规则"
                                 }
                                 Text(
                                     "仍有 ${plan.remainingViolations.size} 项未化解（${plan.remainingViolations.map(titleOf).joinToString("、")}），宜以遮挡或改造之法待之",

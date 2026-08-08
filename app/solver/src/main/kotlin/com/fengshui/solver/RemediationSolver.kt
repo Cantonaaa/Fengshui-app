@@ -54,7 +54,7 @@ class RemediationSolver(
             val subjects = index.subjectCandidates(v, facts)
             if (subjects.isEmpty()) {
                 remaining.add(v.id)
-                tradeoffs.add("规则 ${v.id}：无移动目标（涉及固定结构，需遮挡/改造 L2/L3）")
+                tradeoffs.add("规则「${v.title}」：无移动目标（涉及固定结构，需遮挡或改造）")
                 continue
             }
             val sid = subjects[0].id
@@ -137,13 +137,13 @@ class RemediationSolver(
                 bestScore = soft
                 best = p
                 bestDesc = describe(s, p, facts)
-                bestTradeoff = if (perfect) null else "次优方案：消除目标但引入 ${newViolations.map { v -> affected.firstOrNull { r -> r.id == v }?.title?.ifEmpty { v } ?: v }.joinToString("、")}（凶势较轻），可接受或进一步处理"
+                bestTradeoff = if (perfect) null else "次优方案：消除目标但引入 ${newViolations.map { v -> affected.firstOrNull { r -> r.id == v }?.title ?: "相关规则" }.joinToString("、")}（凶势较轻），可接受或进一步处理"
             }
         }
 
         if (best == null) return if (sawBlocked) FixResult.Blocked else FixResult.NoSolution
         s.pos = best
-        return FixResult.Fixed(bestDesc, "满足：${targets.map { it.title.ifEmpty { it.id } }.joinToString("、")} 已消除，无新凶", bestTradeoff)
+        return FixResult.Fixed(bestDesc, "满足：${targets.map { it.title.ifEmpty { "相关规则" } }.joinToString("、")} 已消除，无新凶", bestTradeoff)
     }
 
     /** 优化4：贴墙类的靠墙侧是否落吉方位。 */
@@ -236,7 +236,7 @@ class RemediationSolver(
 
     private fun describe(s: Furniture, p: Pt, facts: RoomFacts): String =
         if (s.placement == Placement.WALL_NEEDING)
-            "${s.type}移到（${"%.2f".format(p.x)}, ${"%.2f".format(p.z)}），靠背/床头贴墙"
+            "${s.zhName}移到（${"%.2f".format(p.x)}, ${"%.2f".format(p.z)}），靠背/床头贴墙"
         else
-            "${s.type}移到（${"%.2f".format(p.x)}, ${"%.2f".format(p.z)}）空位"
+            "${s.zhName}移到（${"%.2f".format(p.x)}, ${"%.2f".format(p.z)}）空位"
 }

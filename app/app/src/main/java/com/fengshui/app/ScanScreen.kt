@@ -65,6 +65,8 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var permissionRequested by remember { mutableStateOf(false) }
     var pointCount by remember { mutableIntStateOf(0) }
     var azimuthDeg by remember { mutableStateOf("--") }
+    var debugRevealed by remember { mutableStateOf(false) }   // 导出调试按钮（连续点击版本标签 7 次呼出）
+    var versionTapCount by remember { mutableIntStateOf(0) }
     var northSet by remember { mutableStateOf(false) }   // 每次入宅须定向正盘（北向不跨会话）
     val recorder = remember { PointCloudRecorder() }
     val wallSegs = remember { java.util.concurrent.CopyOnWriteArrayList<FloatArray>() }  // A: ARCore 竖墙段 [x1,z1,x2,z2]
@@ -357,7 +359,8 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             modifier = Modifier.fillMaxWidth().height(50.dp),
                             shape = RoundedCornerShape(14.dp)
                         ) { Text(if (processing) "起批中..." else "勘毕起批", style = MaterialTheme.typography.titleSmall) }
-                        Button(
+                        if (debugRevealed) {
+                            Button(
                             onClick = {
                                 scope.launch(Dispatchers.Default) {
                                     try {
@@ -394,6 +397,21 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             modifier = Modifier.fillMaxWidth().height(44.dp),
                             shape = btnShape
                         ) { Text("导出点云/轨迹(调试)", style = MaterialTheme.typography.bodySmall) }
+                        }
+                        TextButton(
+                            onClick = {
+                                versionTapCount++
+                                if (versionTapCount >= 7) {
+                                    debugRevealed = true
+                                    status = "调试功能已开启"
+                                }
+                            },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) { Text(
+                            "v${BuildConfig.VERSION_NAME}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        ) }
                         TextButton(
                             onClick = onBack,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
