@@ -81,3 +81,6 @@ scripts/yolov8m-worldv2_patchedH*
 scripts/yolov8m_world_v2_960.onnx
 scripts/yolov8m_world_v2_960.pt
 scripts/backup/
+
+# 真机导出点云/轨迹（测试数据，可重新导出）
+scripts/pointclouds/

@@ -3,6 +3,7 @@ package com.fengshui.app
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.sqrt
 
 /**
@@ -58,10 +59,28 @@ object RoomPolygon {
     private fun dist(p: FloatArray, plane: Plane): Float =
         abs(plane.normal[0]*p[0]+plane.normal[1]*p[1]+plane.normal[2]*p[2]+plane.d)
 
-    /** 主入口：点云 → 房间足迹多边形。 */
-    fun buildPolygon(raw: List<FloatArray>): Polygon? {
+    /** 主入口：点云 → 房间足迹多边形。track = 扫描期相机轨迹 (ox, oz) 序列。 */
+    /** 主入口：点云 → 房间足迹多边形。track = 扫描期相机轨迹 (ox,oz)；wallSegments = ARCore 竖墙段 [x1,z1,x2,z2]。 */
+    fun buildPolygon(
+        raw: List<FloatArray>,
+        track: List<Pair<Float, Float>> = emptyList(),
+        wallSegments: List<FloatArray> = emptyList()
+    ): Polygon? {
         val c = clean(raw)
         if (c.size < 50) return null
+
+        // 改进算法（主路径）：全点密度网格 + 形态学闭合 + 轨迹约束 + ARCore 竖墙证据(A) + 墙线拟合/正交化(D/B) + 规则化(C)。
+        if (track.size >= 3) {
+            try {
+                val imp = improvedOutlineWall(c, track, wallSegments)
+                if (imp != null) {
+                    val a = polygonArea(imp)
+                    if (a > 0.5f && isSimple(imp)) return Polygon(imp, a)
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("RoomPolygon", "改进算法异常，回退旧路径: ${e.message}")
+            }
+        }
 
         // 1) 地板平面：水平且最低
         var floor: Plane? = null
@@ -114,6 +133,341 @@ object RoomPolygon {
         }
         val area = polygonArea(shape)
         return Polygon(shape, area)
+    }
+
+    /** 点在多边形内（射线法，含边界）。 */
+    private fun pointInPoly(p: FloatArray, poly: List<FloatArray>): Boolean {
+        var inside = false
+        var j = poly.size - 1
+        for (i in poly.indices) {
+            val xi = poly[i][0]; val zi = poly[i][1]
+            val xj = poly[j][0]; val zj = poly[j][1]
+            if ((zi > p[1]) != (zj > p[1]) &&
+                p[0] < (xj - xi) * (p[1] - zi) / (zj - zi) + xi
+            ) inside = !inside
+            j = i
+        }
+        return inside
+    }
+
+    /** 形态学闭合：先膨胀 1 格再腐蚀 1 格（补采样缝，不净扩边界）。一维 flat 网格（规避 2D 数组 JIT 越界）。 */
+    private fun closeGrid(occ: BooleanArray, gh: Int, gw: Int): BooleanArray {
+        val dil = BooleanArray(gh * gw)
+        for (r in 0 until gh) for (c in 0 until gw) {
+            val base = r * gw + c
+            var hit = false
+            for (dr in -1..1) {
+                val rr = r + dr
+                if (rr < 0 || rr >= gh) continue
+                for (dc in -1..1) {
+                    val cc = c + dc
+                    if (cc < 0 || cc >= gw) continue
+                    if (occ[rr * gw + cc]) { hit = true; break }
+                }
+                if (hit) break
+            }
+            dil[base] = hit
+        }
+        val ero = BooleanArray(gh * gw)
+        for (r in 0 until gh) for (c in 0 until gw) {
+            val base = r * gw + c
+            if (!dil[base]) continue
+            var all = true
+            for (dr in -1..1) {
+                val rr = r + dr
+                if (rr < 0 || rr >= gh) { all = false; break }
+                for (dc in -1..1) {
+                    val cc = c + dc
+                    if (cc < 0 || cc >= gw) { all = false; break }
+                    if (!dil[rr * gw + cc]) { all = false; break }
+                }
+                if (!all) break
+            }
+            ero[base] = all
+        }
+        return ero
+    }
+
+    /** 网格占用 → 最大 4 连通分量 → Moore 外轮廓 → 世界坐标 → 去共线。一维 flat 网格。 */
+    private fun traceBoundary(occ: BooleanArray, gh: Int, gw: Int, minX: Float, minZ: Float, cell: Float): List<FloatArray>? {
+        val label = IntArray(gh * gw)
+        var mainSize = 0
+        var startCell: Pair<Int, Int>? = null
+        for (r in 0 until gh) for (c in 0 until gw) {
+            val base = r * gw + c
+            if (!occ[base] || label[base] != 0) continue
+            val q = ArrayDeque<Pair<Int, Int>>()
+            label[base] = 1
+            q.add(r to c)
+            var size = 0
+            var topmost: Pair<Int, Int>? = null
+            while (q.isNotEmpty()) {
+                val (rr, cc) = q.removeFirst()
+                size++
+                if (topmost == null || rr < topmost.first) topmost = rr to cc
+                for ((dr, dc) in listOf(0 to 1, 1 to 0, 0 to -1, -1 to 0)) {
+                    val nr = rr + dr; val nc = cc + dc
+                    if (nr in 0 until gh && nc in 0 until gw && occ[nr * gw + nc] && label[nr * gw + nc] == 0) {
+                        label[nr * gw + nc] = 1
+                        q.add(nr to nc)
+                    }
+                }
+            }
+            if (size > mainSize) { mainSize = size; startCell = topmost }
+        }
+        if (mainSize < 4 || startCell == null) return null
+        val (b0r, b0c) = startCell
+        val boundary = mutableListOf(b0r to b0c)
+        var br = b0r; var bc = b0c
+        var prevR = b0r; var prevC = b0c - 1
+        val dirs = listOf(
+            0 to -1, -1 to -1, -1 to 0, -1 to 1, 0 to 1, 1 to 1, 1 to 0, 1 to -1
+        )
+        var guard = 0
+        while (true) {
+            if (++guard > 1_000_000) return null
+            val dirIdx = dirs.indexOf(prevR - br to prevC - bc)
+            if (dirIdx < 0) return null
+            var next: Pair<Int, Int>? = null
+            for (k in 1..8) {
+                val (dr, dc) = dirs[(dirIdx + k) and 7]
+                val nr = br + dr; val nc = bc + dc
+                if (nr in 0 until gh && nc in 0 until gw && occ[nr * gw + nc]) { next = nr to nc; break }
+            }
+            val (nr, nc) = next ?: return null
+            prevR = br; prevC = bc
+            br = nr; bc = nc
+            if (br == b0r && bc == b0c) break
+            boundary.add(br to bc)
+        }
+        if (boundary.size < 4) return null
+        val raw = boundary.map { floatArrayOf(minX + (it.second + 0.5f) * cell, minZ + (it.first + 0.5f) * cell) }
+        return simplifyCollinear(dedupeConsecutive(raw))
+    }
+
+    /**
+     * 改进算法：全点(含墙点) XZ 密度网格 → 轨迹包络裁剪(上界, 控鬼影) → 形态学闭合 → 最大分量 → 外轮廓。
+     * 下界：轮廓须含 ≥50% 轨迹，否则退化为轨迹包络外扩矩形。
+     */
+    private fun improvedOutline(points: List<FloatArray>, track: List<Pair<Float, Float>>): List<FloatArray>? {
+        if (points.size < 20 || track.size < 3) return null
+        val txMin = track.minOf { it.first }; val txMax = track.maxOf { it.first }
+        val tzMin = track.minOf { it.second }; val tzMax = track.maxOf { it.second }
+        val wallMax = 1.5f  // 墙距走迹上限（控鬼影/反射膨胀）
+        val x0c = txMin - wallMax; val x1c = txMax + wallMax
+        val z0c = tzMin - wallMax; val z1c = tzMax + wallMax
+        val inEnv = points.filter { it[0] in x0c..x1c && it[1] in z0c..z1c }
+        if (inEnv.size < 20) return null
+
+        // 降采样：>100K 点抽稀，控网格规模
+        val src = if (inEnv.size > 100_000) inEnv.filterIndexed { i, _ -> i % 2 == 0 } else inEnv
+        if (src.size < 20) return null
+
+        val cell = 0.2f
+        val minX = src.minOf { it[0] }; val maxX = src.maxOf { it[0] }
+        val minZ = src.minOf { it[1] }; val maxZ = src.maxOf { it[1] }
+        val gw = ceil((maxX - minX) / cell).toInt() + 1
+        val gh = ceil((maxZ - minZ) / cell).toInt() + 1
+        if (gw > 512 || gh > 512 || gw < 2 || gh < 2) return null
+        val occ = BooleanArray(gh * gw)
+        for (p in src) {
+            val c = ((p[0] - minX) / cell).toInt().coerceIn(0, gw - 1)
+            val r = ((p[1] - minZ) / cell).toInt().coerceIn(0, gh - 1)
+            occ[r * gw + c] = true
+        }
+        val poly = traceBoundary(closeGrid(occ, gh, gw), gh, gw, minX, minZ, cell) ?: return null
+
+        // 下界：轮廓须包含 ≥50% 轨迹（用户走迹在墙内）
+        val inside = track.count { pointInPoly(floatArrayOf(it.first, it.second), poly) }
+        if (inside < maxOf(3, track.size / 2)) {
+            return listOf(
+                floatArrayOf(txMin - 0.4f, tzMin - 0.4f),
+                floatArrayOf(txMax + 0.4f, tzMin - 0.4f),
+                floatArrayOf(txMax + 0.4f, tzMax + 0.4f),
+                floatArrayOf(txMin - 0.4f, tzMax + 0.4f)
+            )
+        }
+        return poly
+    }
+
+    /** RANSAC 拟合的墙线（法向 + 偏移 + 内点数 + 方向角°）。 */
+    private data class WallLine(val nx: Float, val nz: Float, val d: Float, val inliers: Int, val angleDeg: Float)
+
+    /** D: 从墙证据（点云 XZ + ARCore 墙段端点）RANSAC 拟合多条主导墙线。 */
+    private fun ransacWallLines(xz: List<FloatArray>, thr: Float = 0.15f, minInliers: Int = 20, maxLines: Int = 6): List<WallLine> {
+        if (xz.size < 4) return emptyList()
+        val pts = if (xz.size > 15_000) xz.filterIndexed { i, _ -> i % (xz.size / 15_000 + 1) == 0 } else xz
+        if (pts.size < 4) return emptyList()
+        val rng = java.util.Random(1)
+        var remaining = pts.toMutableList()
+        val lines = ArrayList<WallLine>()
+        repeat(maxLines) {
+            if (remaining.size < 4) return@repeat
+            var best: WallLine? = null
+            repeat(120) {
+                val i = rng.nextInt(remaining.size)
+                var j = rng.nextInt(remaining.size); while (j == i) j = rng.nextInt(remaining.size)
+                val a = remaining[i]; val b = remaining[j]
+                val dx = b[0] - a[0]; val dz = b[1] - a[1]
+                val len = sqrt(dx * dx + dz * dz)
+                if (len < 0.2f) return@repeat
+                val nx = -dz / len; val nz = dx / len
+                val d = -(nx * a[0] + nz * a[1])
+                var cnt = 0
+                for (p in remaining) if (abs(nx * p[0] + nz * p[1] + d) < thr) cnt++
+                if (cnt >= minInliers && (best == null || cnt > best.inliers)) {
+                    best = WallLine(nx, nz, d, cnt, Math.toDegrees(Math.atan2(dz.toDouble(), dx.toDouble())).toFloat())
+                }
+            }
+            val bl = best ?: return@repeat
+            lines.add(bl)
+            remaining = remaining.filter { abs(bl.nx * it[0] + bl.nz * it[1] + bl.d) >= thr }.toMutableList()
+        }
+        return lines
+    }
+
+    /** B: 主方向轴（墙线方向 mod 90，按内点加权，置信门控 ≥60%）。非正交返回 null。 */
+    private fun dominantAxis(lines: List<WallLine>): Float? {
+        if (lines.size < 2) return null
+        val axes = lines.map { ((it.angleDeg % 180f) + 180f) % 180f % 90f }
+        val totalInl = lines.sumOf { it.inliers }
+        if (totalInl <= 0) return null
+        var bestAxis = axes[0]; var bestScore = 0f
+        for (cand in axes) {
+            var score = 0f
+            for (i in lines.indices) {
+                var dd = Math.abs(axes[i] - cand)
+                if (dd > 90f) dd = 180f - dd
+                if (dd <= 8f) score += lines[i].inliers
+            }
+            if (score > bestScore) { bestScore = score; bestAxis = cand }
+        }
+        if (bestScore < 0.6f * totalInl) return null
+        return Math.toRadians(bestAxis.toDouble()).toFloat()
+    }
+
+    /** B: 正交化——旋转到主轴系 → 近轴判定 → 顶点吸附 0.05 网格拉直 → 旋转回。非正交返回 null。 */
+    private fun orthogonalizeOutline(poly: List<FloatArray>, axisRad: Float): List<FloatArray>? {
+        val c = Math.cos(-axisRad.toDouble()); val s = Math.sin(-axisRad.toDouble())
+        val c2 = Math.cos(axisRad.toDouble()); val s2 = Math.sin(axisRad.toDouble())
+        fun rot(p: FloatArray) = floatArrayOf((p[0] * c - p[1] * s).toFloat(), (p[0] * s + p[1] * c).toFloat())
+        fun rotBack(p: FloatArray) = floatArrayOf((p[0] * c2 - p[1] * s2).toFloat(), (p[0] * s2 + p[1] * c2).toFloat())
+        val rp = poly.map { rot(it) }
+        val n = rp.size
+        var near = 0
+        for (i in 0 until n) {
+            val a = rp[i]; val b = rp[(i + 1) % n]
+            val ang = Math.toDegrees(Math.atan2((b[1] - a[1]).toDouble(), (b[0] - a[0]).toDouble()))
+            var aa = ang; while (aa > 90) aa -= 180; while (aa < -90) aa += 180
+            if (abs(aa) < 8f || abs(abs(aa) - 90f) < 8f) near++
+        }
+        if (near < 0.7f * n) return null
+        val grid = 0.05f
+        val out = rp.map { floatArrayOf(Math.round(it[0] / grid) * grid, Math.round(it[1] / grid) * grid) }
+        val dd = simplifyCollinear(dedupeConsecutive(out))
+        return dd.map { rotBack(it) }
+    }
+
+    /** C: Douglas-Peucker 简化（去阶梯/毛刺，保留整体形状）。 */
+    private fun simplifyDP(poly: List<FloatArray>, tol: Float): List<FloatArray> {
+        if (poly.size <= 3) return poly
+        var i0 = 0; var i1 = 0; var maxD = -1f
+        for (i in poly.indices) for (j in i + 1 until poly.size) {
+            val d = hypot(poly[i][0] - poly[j][0], poly[i][1] - poly[j][1])
+            if (d > maxD) { maxD = d; i0 = i; i1 = j }
+        }
+        fun distToSeg(p: FloatArray, a: FloatArray, b: FloatArray): Float {
+            val dx = b[0] - a[0]; val dz = b[1] - a[1]
+            val len2 = dx * dx + dz * dz
+            if (len2 < 1e-9f) return hypot(p[0] - a[0], p[1] - a[1])
+            var t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / len2
+            t = t.coerceIn(0f, 1f)
+            return hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dz))
+        }
+        fun chain(from: Int, to: Int): List<FloatArray> {
+            var maxDist = -1f; var idx = -1
+            var i = (from + 1) % poly.size
+            while (i != to) {
+                val d = distToSeg(poly[i], poly[from], poly[to])
+                if (d > maxDist) { maxDist = d; idx = i }
+                i = (i + 1) % poly.size
+            }
+            if (maxDist > tol && idx >= 0) return chain(from, idx) + chain(idx, to).drop(1)
+            return listOf(poly[from], poly[to])
+        }
+        val out = chain(i0, i1).dropLast(1) + chain(i1, i0)
+        return simplifyCollinear(dedupeConsecutive(out))
+    }
+
+    /**
+     * 改进算法（含 A/B/C/D）：全点密度网格 + ARCore 竖墙证据注入 + 形态学闭合 + 最大分量 + 外轮廓；
+     * D 墙线 RANSAC → B 主方向正交化(置信门控) → C DP 简化；下界轨迹含入。
+     */
+    private fun improvedOutlineWall(
+        points: List<FloatArray>,
+        track: List<Pair<Float, Float>>,
+        wallSegments: List<FloatArray>
+    ): List<FloatArray>? {
+        if (points.size < 20 || track.size < 3) return null
+        val txMin = track.minOf { it.first }; val txMax = track.maxOf { it.first }
+        val tzMin = track.minOf { it.second }; val tzMax = track.maxOf { it.second }
+        val wallMax = 1.5f
+        val x0c = txMin - wallMax; val x1c = txMax + wallMax
+        val z0c = tzMin - wallMax; val z1c = tzMax + wallMax
+        val inEnv = points.filter { it[0] in x0c..x1c && it[1] in z0c..z1c }
+        if (inEnv.size < 20) return null
+        val src = if (inEnv.size > 100_000) inEnv.filterIndexed { i, _ -> i % 2 == 0 } else inEnv
+        if (src.size < 20) return null
+
+        val cell = 0.2f
+        val minX = src.minOf { it[0] }; val maxX = src.maxOf { it[0] }
+        val minZ = src.minOf { it[1] }; val maxZ = src.maxOf { it[1] }
+        val gw = ceil((maxX - minX) / cell).toInt() + 1
+        val gh = ceil((maxZ - minZ) / cell).toInt() + 1
+        if (gw > 512 || gh > 512 || gw < 2 || gh < 2) return null
+        val occ = BooleanArray(gh * gw)
+        fun setCell(x: Float, z: Float) {
+            val cc = ((x - minX) / cell).toInt().coerceIn(0, gw - 1)
+            val rr = ((z - minZ) / cell).toInt().coerceIn(0, gh - 1)
+            occ[rr * gw + cc] = true
+        }
+        for (p in src) setCell(p[0], p[1])
+        // A: 注入 ARCore 竖墙证据（墙段端点 = 精确墙线）
+        val wallPts = ArrayList<FloatArray>()
+        for (ws in wallSegments) {
+            if (ws.size >= 4) {
+                setCell(ws[0], ws[1]); setCell(ws[2], ws[3])
+                wallPts.add(floatArrayOf(ws[0], ws[1])); wallPts.add(floatArrayOf(ws[2], ws[3]))
+            }
+        }
+        val outline = traceBoundary(closeGrid(occ, gh, gw), gh, gw, minX, minZ, cell) ?: return null
+
+        // D: 墙线 RANSAC（网格内点 + 墙段端点）
+        val wallSrc = ArrayList<FloatArray>(src.size + wallPts.size)
+        wallSrc.addAll(src)
+        wallSrc.addAll(wallPts)
+        val lines = ransacWallLines(wallSrc)
+        val axis = if (lines.size >= 2) dominantAxis(lines) else null
+
+        // B: 正交化（置信门控）+ C: DP 简化
+        var finalPoly = outline
+        if (axis != null) {
+            val ortho = orthogonalizeOutline(outline, axis)
+            if (ortho != null) finalPoly = ortho
+        }
+        finalPoly = simplifyDP(finalPoly, 0.25f)
+
+        // 下界：轨迹含入
+        val inside = track.count { pointInPoly(floatArrayOf(it.first, it.second), finalPoly) }
+        if (inside < maxOf(3, track.size / 2)) {
+            return listOf(
+                floatArrayOf(txMin - 0.4f, tzMin - 0.4f),
+                floatArrayOf(txMax + 0.4f, tzMin - 0.4f),
+                floatArrayOf(txMax + 0.4f, tzMax + 0.4f),
+                floatArrayOf(txMin - 0.4f, tzMax + 0.4f)
+            )
+        }
+        return finalPoly
     }
 
     /**

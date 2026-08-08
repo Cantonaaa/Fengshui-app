@@ -67,6 +67,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var azimuthDeg by remember { mutableStateOf("--") }
     var northSet by remember { mutableStateOf(false) }   // 每次入宅须定向正盘（北向不跨会话）
     val recorder = remember { PointCloudRecorder() }
+    val wallSegs = remember { java.util.concurrent.CopyOnWriteArrayList<FloatArray>() }  // A: ARCore 竖墙段 [x1,z1,x2,z2]
     val detector = remember { YOLOWorldNcnn(context) }
     val northHelper = remember { NorthHelper(context) }
     val scope = rememberCoroutineScope()
@@ -96,7 +97,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     // 小地图 / 覆盖度
     var coveragePct by remember { mutableIntStateOf(0) }
     var livePolygon by remember { mutableStateOf<List<Pt>?>(null) }
-    var liveFrames by remember { mutableStateOf<List<Pair<Double, Double>>>(emptyList()) }
+    var liveFrames by remember { mutableStateOf<List<Triple<Double, Double, Double>>>(emptyList()) }
     var currentHeading by remember { mutableStateOf(0.0) }
     var pendingConfirm by remember { mutableStateOf(false) }
 
@@ -176,6 +177,28 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                 planeCount = planes.size
                                 Log.i(TAG, "已检测平面: ${planes.size}")
                             }
+                            // A: 收集竖墙平面 → 多边形顶点投影到地板 → 墙段证据（解决边界内缩）
+                            var vCount = 0
+                            for (p in planes) {
+                                if (p.type == Plane.Type.VERTICAL &&
+                                    p.trackingState == com.google.ar.core.TrackingState.TRACKING &&
+                                    wallSegs.size < 2000
+                                ) {
+                                    vCount++
+                                    val pose = p.centerPose
+                                    val poly = p.polygon
+                                    var prev: FloatArray? = null
+                                    while (poly.hasRemaining()) {
+                                        val w = FloatArray(3)
+                                        val l = floatArrayOf(poly.get(), poly.get(), poly.get())
+                                        pose.transformPoint(l, 0, w, 0)
+                                        val pt = floatArrayOf(w[0], w[2])
+                                        if (prev != null) wallSegs.add(floatArrayOf(prev[0], prev[1], pt[0], pt[1]))
+                                        prev = pt
+                                    }
+                                }
+                            }
+                            if (vCount > 0) Log.i(TAG, "A: 竖墙平面 $vCount 累计段 ${wallSegs.size}")
                             recorder.onFrame(frame)
                             // 录像后处理：相机移动足够则缓存关键帧（JPEG+位姿），不即时检测
                             val snap = ObjectLocalizer.snapshot(frame.camera)
@@ -291,8 +314,11 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                         val objects = PostScanProcessor.process(frames, detector) { done, total ->
                                             procProgress = done * 100 / maxOf(total, 1)
                                         }
-                                        val poly: List<Pt> = RoomPolygon.buildPolygon(recorder.getPoints())
-                                            ?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
+                                        val poly: List<Pt> = RoomPolygon.buildPolygon(
+                                            recorder.getPoints(),
+                                            frameBuffer.all().map { it.snap.ox to it.snap.oz },
+                                            wallSegs.toList()
+                                        )?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
                                             ?: FactsBuilder.boundingPolygon(objects)
                                         // 书柜双验证 + safe→finance_room 归一化（book 作验证器丢弃）
                                         val canon = PostScanProcessor.canonicalizeScan(objects)
@@ -324,6 +350,43 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                             modifier = Modifier.fillMaxWidth().height(50.dp),
                             shape = RoundedCornerShape(14.dp)
                         ) { Text(if (processing) "起批中..." else "勘毕起批", style = MaterialTheme.typography.titleSmall) }
+                        Button(
+                            onClick = {
+                                scope.launch(Dispatchers.Default) {
+                                    try {
+                                        val pts = recorder.getPoints()
+                                        val track = frameBuffer.all().map { it.snap.ox to it.snap.oz }
+                                        val dir = context.getExternalFilesDir(null) ?: context.filesDir
+                                        val ts = System.currentTimeMillis()
+                                        val plyFile = java.io.File(dir, "room_points_$ts.ply")
+                                        plyFile.bufferedWriter().use { w ->
+                                            w.write("ply\n")
+                                            w.write("format ascii 1.0\n")
+                                            w.write("element vertex ${pts.size}\n")
+                                            w.write("property float x\nproperty float y\nproperty float z\n")
+                                            w.write("end_header\n")
+                                            for (p in pts) w.write("${p[0]} ${p[1]} ${p[2]}\n")
+                                        }
+                                        val trkFile = java.io.File(dir, "room_track_$ts.txt")
+                                        trkFile.bufferedWriter().use { w ->
+                                            for ((ox, oz) in track) w.write("$ox $oz\n")
+                                        }
+                                        Log.i(TAG, "导出: ${pts.size}点 ${track.size}帧 -> $dir")
+                                        withContext(Dispatchers.Main) {
+                                            status = "已导出点云 ${pts.size} / 轨迹 ${track.size} 帧"
+                                            android.widget.Toast.makeText(
+                                                context, "已导出点云+轨迹", android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.w(TAG, "导出失败: ${e.message}", e)
+                                        withContext(Dispatchers.Main) { status = "导出失败: ${e.message}" }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(44.dp),
+                            shape = btnShape
+                        ) { Text("导出点云/轨迹(调试)", style = MaterialTheme.typography.bodySmall) }
                         TextButton(
                             onClick = onBack,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -383,16 +446,21 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
             kotlinx.coroutines.withContext(Dispatchers.Default) {
                 val snap = latestSnap[0]
                 currentHeading = if (snap != null) ObjectLocalizer.cameraForwardHeading(snap) else currentHeading
-                val poly = RoomPolygon.buildPolygon(recorder.getPoints())
-                    ?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
+                val poly = RoomPolygon.buildPolygon(
+                    recorder.getPoints(),
+                    frameBuffer.all().map { it.snap.ox to it.snap.oz },
+                    wallSegs.toList()
+                )?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
                 livePolygon = poly
                 if (poly != null) {
                     val frames = frameBuffer.all()
-                    liveFrames = frames.map { it.snap.ox.toDouble() to it.snap.oz.toDouble() }
+                    liveFrames = frames.map {
+                        Triple(it.snap.ox.toDouble(), it.snap.oz.toDouble(), ObjectLocalizer.cameraForwardHeading(it.snap))
+                    }
                     coveragePct = ScanCoverage.coveragePct(liveFrames, poly, 3.0)
                 }
             }
-            kotlinx.coroutines.delay(2500)
+            kotlinx.coroutines.delay(1000)  // 小地图 1s 刷新（原 2.5s）
         }
     }
 }

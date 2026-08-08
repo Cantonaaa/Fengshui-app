@@ -25,11 +25,18 @@ import kotlin.math.hypot
 object ScanCoverage {
 
     /**
-     * 房间多边形网格化，格点距任一关键帧相机位置 ≤ r 视为已覆盖。
+     * 房间多边形网格化，格点若位于任一关键帧相机位置的**视角扇形**内（距离≤r 且方向角与航向差≤半视场）视为已覆盖。
+     * keyframes 为 (ox, oz, 航向弧度)。
      * @return 覆盖百分比 0..100
      */
-    fun coveragePct(keyframes: List<Pair<Double, Double>>, polygon: List<Pt>, r: Double): Int {
+    fun coveragePct(
+        keyframes: List<Triple<Double, Double, Double>>,
+        polygon: List<Pt>,
+        r: Double,
+        halfFovDeg: Double = 35.0
+    ): Int {
         if (polygon.size < 3 || keyframes.isEmpty()) return 0
+        val half = Math.toRadians(halfFovDeg)
         val minX = polygon.minOf { it.x }; val maxX = polygon.maxOf { it.x }
         val minZ = polygon.minOf { it.z }; val maxZ = polygon.maxOf { it.z }
         val cell = 0.5
@@ -41,13 +48,24 @@ object ScanCoverage {
             while (z <= maxZ) {
                 if (Geo.pointInPolygon(Pt(x, z), polygon)) {
                     total++
-                    if (keyframes.any { hypot(it.first - x, it.second - z) <= r }) covered++
+                    if (keyframes.any { (ox, oz, hk) ->
+                            val dx = x - ox; val dz = z - oz
+                            val dist = hypot(dx, dz)
+                            dist <= r && Math.abs(normAngle(Math.atan2(dx, dz) - hk)) <= half
+                        }) covered++
                 }
                 z += cell
             }
             x += cell
         }
         return if (total == 0) 0 else covered * 100 / total
+    }
+
+    private fun normAngle(a: Double): Double {
+        var v = a
+        while (v > Math.PI) v -= 2 * Math.PI
+        while (v < -Math.PI) v += 2 * Math.PI
+        return v
     }
 }
 
@@ -57,7 +75,7 @@ object ScanCoverage {
  */
 @Composable
 fun MiniMapView(
-    keyframes: List<Pair<Double, Double>>,
+    keyframes: List<Triple<Double, Double, Double>>,
     polygon: List<Pt>?,
     cameraPos: Pair<Double, Double>,
     headingRad: Double,
@@ -72,7 +90,8 @@ fun MiniMapView(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Canvas(Modifier.size(120.dp)) {
-                val all = keyframes + (polygon?.map { it.x to it.z } ?: emptyList()) + listOf(cameraPos)
+                val kfPts = keyframes.map { it.first to it.second }
+                val all = kfPts + (polygon?.map { it.x to it.z } ?: emptyList()) + listOf(cameraPos)
                 if (all.isEmpty()) return@Canvas
                 val cx = all.map { it.first }.average()
                 val cz = all.map { it.second }.average()
@@ -86,10 +105,21 @@ fun MiniMapView(
                     size.height / 2f - (p.second * scale).toFloat()
                 )
 
-                // 覆盖亮圈（关键帧并集）
+                // 覆盖扇形（关键帧视角范围：以相机位置为圆心、沿航向 ±半视场的楔形）
                 for (kf in keyframes) {
-                    val c = toSc(BaguaMap.project(Pt(kf.first, kf.second), center, headingRad))
-                    drawCircle(Color(0xFF7FB8E8).copy(alpha = 0.40f), radius = (coverageRadius * scale).toFloat(), center = c)
+                    val (ox, oz, hk) = kf
+                    val c = toSc(BaguaMap.project(Pt(ox, oz), center, headingRad))
+                    val rel = hk - headingRad   // 相对地图朝上（当前相机航向）
+                    val rad = (coverageRadius * scale).toFloat()
+                    val half = Math.toRadians(35.0)
+                    val path = Path().apply { moveTo(c.x, c.y) }
+                    val steps = 24
+                    for (i in 0..steps) {
+                        val a = rel - half + 2 * half * i / steps
+                        path.lineTo(c.x + rad * Math.sin(a).toFloat(), c.y - rad * Math.cos(a).toFloat())
+                    }
+                    path.close()
+                    drawPath(path, Color(0xFF7FB8E8).copy(alpha = 0.30f))
                 }
                 // 墙线
                 polygon?.takeIf { it.size >= 3 }?.let { poly ->
