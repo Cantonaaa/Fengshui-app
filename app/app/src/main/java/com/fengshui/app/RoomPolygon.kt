@@ -72,7 +72,8 @@ object RoomPolygon {
         // 改进算法（主路径）：全点密度网格 + 形态学闭合 + 轨迹约束 + ARCore 竖墙证据(A) + 墙线拟合/正交化(D/B) + 规则化(C)。
         if (track.size >= 3) {
             try {
-                val imp = improvedOutlineWall(c, track, wallSegments)
+                val floorH = floorHeightY(c) ?: 0f
+                val imp = improvedOutlineWall(c, track, wallSegments, floorH)
                 if (imp != null) {
                     val a = polygonArea(imp)
                     if (a > 0.5f && isSimple(imp)) return Polygon(imp, a)
@@ -431,56 +432,83 @@ object RoomPolygon {
     }
 
     /**
-     * 改进算法（含 A/B/C/D）：全点密度网格 + ARCore 竖墙证据注入 + 形态学闭合 + 最大分量 + 外轮廓；
-     * D 墙线 RANSAC → B 主方向正交化(置信门控) → C DP 简化；下界轨迹含入。
+     * 地板高度：取 y 最低区间内密度最高处（底部 45% 点里最密的 0.15m 窗口）。
+     * 替代 RANSAC（在床/桌等大面积家具占优时误判床面）。
+     */
+    private fun floorHeightY(points: List<FloatArray>): Float? {
+        val ys = points.map { it[1] }.filter { it.isFinite() && it > -0.6f && it < 3.5f }
+        if (ys.size < 50) return null
+        val sorted = ys.sorted()
+        val low = sorted.take(maxOf(20, sorted.size * 45 / 100))
+        if (low.isEmpty()) return null
+        var bestCenter = low.first(); var bestCount = 0
+        var s = 0; var e = 0
+        while (e < low.size) {
+            while (e < low.size && low[e] - low[s] <= 0.15f) e++
+            val cnt = e - s
+            if (cnt > bestCount) { bestCount = cnt; bestCenter = low[(s + e - 1) / 2] }
+            s++
+        }
+        return bestCenter
+    }
+
+    /** 凸包按质心外扩 margin（兜底：轨迹凸包 → 粗略房间范围）。 */
+    private fun expandPolygon(poly: List<FloatArray>, margin: Float): List<FloatArray> {
+        if (poly.size < 3) return poly
+        val cx = poly.map { it[0] }.average().toFloat()
+        val cz = poly.map { it[1] }.average().toFloat()
+        return poly.map { v ->
+            val dx = v[0] - cx; val dz = v[1] - cz
+            val len = hypot(dx, dz)
+            if (len < 1e-6f) v else floatArrayOf(v[0] + dx / len * margin, v[1] + dz / len * margin)
+        }
+    }
+
+    /**
+     * 扫描画面建模（含 A/B/C/D）：地板带 + 墙带密度网格 ∪ ARCore 竖墙证据 → 形态学闭合 → 最大分量 → 外轮廓；
+     * D 墙线 RANSAC → B 主方向正交化(置信门控) → C DP 简化；轨迹仅作下界（不含轨迹则轨迹凸包外扩，不裁剪墙）。
      */
     private fun improvedOutlineWall(
         points: List<FloatArray>,
         track: List<Pair<Float, Float>>,
-        wallSegments: List<FloatArray>
+        wallSegments: List<FloatArray>,
+        floorH: Float
     ): List<FloatArray>? {
         if (points.size < 20 || track.size < 3) return null
-        val txMin = track.minOf { it.first }; val txMax = track.maxOf { it.first }
-        val tzMin = track.minOf { it.second }; val tzMax = track.maxOf { it.second }
-        val wallMax = 1.5f
-        val x0c = txMin - wallMax; val x1c = txMax + wallMax
-        val z0c = tzMin - wallMax; val z1c = tzMax + wallMax
-        val inEnv = points.filter { it[0] in x0c..x1c && it[1] in z0c..z1c }
-        if (inEnv.size < 20) return null
-        val src = if (inEnv.size > 100_000) inEnv.filterIndexed { i, _ -> i % 2 == 0 } else inEnv
-        if (src.size < 20) return null
 
-        val cell = 0.2f
-        val minX = src.minOf { it[0] }; val maxX = src.maxOf { it[0] }
-        val minZ = src.minOf { it[1] }; val maxZ = src.maxOf { it[1] }
-        val gw = ceil((maxX - minX) / cell).toInt() + 1
-        val gh = ceil((maxZ - minZ) / cell).toInt() + 1
-        if (gw > 512 || gh > 512 || gw < 2 || gh < 2) return null
-        val occ = BooleanArray(gh * gw)
-        fun setCell(x: Float, z: Float) {
-            val cc = ((x - minX) / cell).toInt().coerceIn(0, gw - 1)
-            val rr = ((z - minZ) / cell).toInt().coerceIn(0, gh - 1)
-            occ[rr * gw + cc] = true
+        // 候选点：地板带（|y-fh|<0.15）+ 墙带（y∈[fh+0.4, fh+2.6]）→ 扫描画面里的房间范围证据
+        val cand = ArrayList<FloatArray>()
+        for (p in points) {
+            val dy = p[1] - floorH
+            if (dy in -0.15f..0.15f || dy in 0.4f..2.6f) cand.add(floatArrayOf(p[0], p[2]))
         }
-        for (p in src) setCell(p[0], p[1])
-        // A: 注入 ARCore 竖墙证据（墙段端点 = 精确墙线）
-        val wallPts = ArrayList<FloatArray>()
         for (ws in wallSegments) {
             if (ws.size >= 4 && ws[0].isFinite() && ws[1].isFinite() && ws[2].isFinite() && ws[3].isFinite()) {
-                setCell(ws[0], ws[1]); setCell(ws[2], ws[3])
-                wallPts.add(floatArrayOf(ws[0], ws[1])); wallPts.add(floatArrayOf(ws[2], ws[3]))
+                cand.add(floatArrayOf(ws[0], ws[1])); cand.add(floatArrayOf(ws[2], ws[3]))
             }
         }
-        val outline = traceBoundary(closeGrid(occ, gh, gw), gh, gw, minX, minZ, cell) ?: return null
+        if (cand.size < 20) return null
 
-        // D: 墙线 RANSAC（网格内点 + 墙段端点）
-        val wallSrc = ArrayList<FloatArray>(src.size + wallPts.size)
-        wallSrc.addAll(src)
-        wallSrc.addAll(wallPts)
-        val lines = ransacWallLines(wallSrc)
+        val cell = 0.2f
+        val minX = cand.minOf { it[0] }; val maxX = cand.maxOf { it[0] }
+        val minZ = cand.minOf { it[1] }; val maxZ = cand.maxOf { it[1] }
+        val gw = ceil((maxX - minX) / cell).toInt() + 1
+        val gh = ceil((maxZ - minZ) / cell).toInt() + 1
+        if (gw > 1024 || gh > 1024 || gw < 2 || gh < 2) return null
+        val cnt = IntArray(gh * gw)
+        for (p in cand) {
+            val c = ((p[0] - minX) / cell).toInt().coerceIn(0, gw - 1)
+            val r = ((p[1] - minZ) / cell).toInt().coerceIn(0, gh - 1)
+            cnt[r * gw + c]++
+        }
+        // 密度滤波（≥2 点/格，轻量去鬼影）+ 形态学闭合 + 最大连通分量 + 外轮廓
+        val dense = BooleanArray(gh * gw)
+        for (i in cnt.indices) dense[i] = cnt[i] >= 2
+        val outline = traceBoundary(closeGrid(dense, gh, gw), gh, gw, minX, minZ, cell) ?: return null
+
+        // D: 墙线 RANSAC（候选点）→ 主轴
+        val lines = ransacWallLines(cand)
         val axis = if (lines.size >= 2) dominantAxis(lines) else null
-
-        // B: 正交化（置信门控）+ C: DP 简化 + 毛刺去除
         var finalPoly = outline
         if (axis != null) {
             val ortho = orthogonalizeOutline(outline, axis)
@@ -488,15 +516,11 @@ object RoomPolygon {
         }
         finalPoly = removeSpikes(simplifyDP(finalPoly, 0.25f), 0.3f)
 
-        // 下界：轨迹含入
+        // 轨迹下界：须含 ≥50%（用户走迹在房间内）；否则轨迹凸包外扩（非严格矩形，不裁剪墙）
         val inside = track.count { pointInPoly(floatArrayOf(it.first, it.second), finalPoly) }
         if (inside < maxOf(3, track.size / 2)) {
-            return listOf(
-                floatArrayOf(txMin - 0.4f, tzMin - 0.4f),
-                floatArrayOf(txMax + 0.4f, tzMin - 0.4f),
-                floatArrayOf(txMax + 0.4f, tzMax + 0.4f),
-                floatArrayOf(txMin - 0.4f, tzMax + 0.4f)
-            )
+            val hull = convexHull(track.map { floatArrayOf(it.first, it.second) })
+            return expandPolygon(hull, 0.6f)
         }
         return finalPoly
     }

@@ -70,6 +70,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     var northSet by remember { mutableStateOf(false) }   // 每次入宅须定向正盘（北向不跨会话）
     val recorder = remember { PointCloudRecorder() }
     val wallSegs = remember { java.util.concurrent.CopyOnWriteArrayList<FloatArray>() }  // A: ARCore 竖墙段 [x1,z1,x2,z2]
+    val wallSegKeys = remember { java.util.concurrent.ConcurrentHashMap.newKeySet<Long>() }  // 端点去重（0.1m 量化）
     val detector = remember { YOLOWorldNcnn(context) }
     val northHelper = remember { NorthHelper(context) }
     val scope = rememberCoroutineScope()
@@ -179,7 +180,10 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                 planeCount = planes.size
                                 Log.i(TAG, "已检测平面: ${planes.size}")
                             }
-                            // A: 收集竖墙平面 → 多边形顶点投影到地板 → 墙段证据（解决边界内缩）
+                            // A: 收集竖墙平面 → 多边形顶点投影到地板 → 墙段证据（解决边界内缩）。
+                            // 去重：端点 0.1m 量化键，仅新增覆盖的段才入列（避免每帧重复灌满上限）。
+                            fun wsKey(x: Float, z: Float): Long =
+                                (Math.round(x / 0.1f).toLong() shl 32) or (Math.round(z / 0.1f).toLong() and 0xFFFFFFFFL)
                             var vCount = 0
                             for (p in planes) {
                                 if (p.type == Plane.Type.VERTICAL &&
@@ -199,7 +203,13 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                             // 位姿异常可能产生 NaN：跳过并重置段起点
                                             if (!w[0].isFinite() || !w[2].isFinite()) { prev = null; continue }
                                             val pt = floatArrayOf(w[0], w[2])
-                                            if (prev != null) wallSegs.add(floatArrayOf(prev[0], prev[1], pt[0], pt[1]))
+                                            if (prev != null) {
+                                                val k0 = wsKey(prev[0], prev[1])
+                                                val k1 = wsKey(pt[0], pt[1])
+                                                if (wallSegKeys.add(k0) || wallSegKeys.add(k1)) {
+                                                    wallSegs.add(floatArrayOf(prev[0], prev[1], pt[0], pt[1]))
+                                                }
+                                            }
                                             prev = pt
                                         } catch (e: Exception) {
                                             break
@@ -207,7 +217,17 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                     }
                                 }
                             }
-                            if (vCount > 0) Log.i(TAG, "A: 竖墙平面 $vCount 累计段 ${wallSegs.size}")
+                            if (vCount > 0 && wallSegs.size > 0) {
+                                var minX = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE
+                                var minZ = Float.MAX_VALUE; var maxZ = -Float.MAX_VALUE
+                                for (ws in wallSegs) {
+                                    if (ws[0] < minX) minX = ws[0]; if (ws[0] > maxX) maxX = ws[0]
+                                    if (ws[1] < minZ) minZ = ws[1]; if (ws[1] > maxZ) maxZ = ws[1]
+                                    if (ws[2] < minX) minX = ws[2]; if (ws[2] > maxX) maxX = ws[2]
+                                    if (ws[3] < minZ) minZ = ws[3]; if (ws[3] > maxZ) maxZ = ws[3]
+                                }
+                                Log.i(TAG, "A: 竖墙平面 $vCount 去重段 ${wallSegs.size} 范围 x[$minX,$maxX] z[$minZ,$maxZ]")
+                            }
                             recorder.onFrame(frame)
                             // 录像后处理：相机移动足够则缓存关键帧（JPEG+位姿），不即时检测
                             val snap = ObjectLocalizer.snapshot(frame.camera)
@@ -284,7 +304,7 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                     ) {
                         Text(status, style = MaterialTheme.typography.bodySmall)
                         Text(
-                            "先沿墙绕行一周（覆边缘器物），再室内穿行（覆中心器物）",
+                            "先沿墙绕行一周（覆边缘器物），再室内穿行（覆中心器物）；对每面墙（尤其白墙/玻璃墙）多角度停留扫视，便于识别墙体",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
