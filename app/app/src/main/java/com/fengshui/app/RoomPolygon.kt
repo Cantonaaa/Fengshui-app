@@ -386,6 +386,7 @@ object RoomPolygon {
     /** C: Douglas-Peucker 简化（去阶梯/毛刺，保留整体形状）。 */
     private fun simplifyDP(poly: List<FloatArray>, tol: Float): List<FloatArray> {
         if (poly.size <= 3) return poly
+        if (poly.size > 1024) return simplifyCollinear(dedupeConsecutive(poly))  // 防深递归
         var i0 = 0; var i1 = 0; var maxD = -1f
         for (i in poly.indices) for (j in i + 1 until poly.size) {
             val d = hypot(poly[i][0] - poly[j][0], poly[i][1] - poly[j][1])
@@ -465,7 +466,7 @@ object RoomPolygon {
         // A: 注入 ARCore 竖墙证据（墙段端点 = 精确墙线）
         val wallPts = ArrayList<FloatArray>()
         for (ws in wallSegments) {
-            if (ws.size >= 4) {
+            if (ws.size >= 4 && ws[0].isFinite() && ws[1].isFinite() && ws[2].isFinite() && ws[3].isFinite()) {
                 setCell(ws[0], ws[1]); setCell(ws[2], ws[3])
                 wallPts.add(floatArrayOf(ws[0], ws[1])); wallPts.add(floatArrayOf(ws[2], ws[3]))
             }

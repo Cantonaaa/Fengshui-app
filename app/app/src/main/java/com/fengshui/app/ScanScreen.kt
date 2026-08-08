@@ -188,13 +188,20 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
                                     val pose = p.centerPose
                                     val poly = p.polygon
                                     var prev: FloatArray? = null
-                                    while (poly.hasRemaining()) {
-                                        val w = FloatArray(3)
-                                        val l = floatArrayOf(poly.get(), poly.get(), poly.get())
-                                        pose.transformPoint(l, 0, w, 0)
-                                        val pt = floatArrayOf(w[0], w[2])
-                                        if (prev != null) wallSegs.add(floatArrayOf(prev[0], prev[1], pt[0], pt[1]))
-                                        prev = pt
+                                    // ARCore 多边形缓冲剩余可能非 3 的倍数：剩余 ≥3 才读一个顶点，异常跳过该平面
+                                    while (poly.remaining() >= 3) {
+                                        try {
+                                            val w = FloatArray(3)
+                                            val l = floatArrayOf(poly.get(), poly.get(), poly.get())
+                                            pose.transformPoint(l, 0, w, 0)
+                                            // 位姿异常可能产生 NaN：跳过并重置段起点
+                                            if (!w[0].isFinite() || !w[2].isFinite()) { prev = null; continue }
+                                            val pt = floatArrayOf(w[0], w[2])
+                                            if (prev != null) wallSegs.add(floatArrayOf(prev[0], prev[1], pt[0], pt[1]))
+                                            prev = pt
+                                        } catch (e: Exception) {
+                                            break
+                                        }
                                     }
                                 }
                             }
@@ -444,20 +451,25 @@ fun ScanScreen(onBack: () -> Unit, onAnalyze: () -> Unit) {
     LaunchedEffect(arcoreReady) {
         while (arcoreReady && !processing) {
             kotlinx.coroutines.withContext(Dispatchers.Default) {
-                val snap = latestSnap[0]
-                currentHeading = if (snap != null) ObjectLocalizer.cameraForwardHeading(snap) else currentHeading
-                val poly = RoomPolygon.buildPolygon(
-                    recorder.getPoints(),
-                    frameBuffer.all().map { it.snap.ox to it.snap.oz },
-                    wallSegs.toList()
-                )?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
-                livePolygon = poly
-                if (poly != null) {
-                    val frames = frameBuffer.all()
-                    liveFrames = frames.map {
-                        Triple(it.snap.ox.toDouble(), it.snap.oz.toDouble(), ObjectLocalizer.cameraForwardHeading(it.snap))
+                // 任何异常不得崩扫描（LaunchedEffect 未捕获异常会闪退）
+                try {
+                    val snap = latestSnap[0]
+                    currentHeading = if (snap != null) ObjectLocalizer.cameraForwardHeading(snap) else currentHeading
+                    val poly = RoomPolygon.buildPolygon(
+                        recorder.getPoints(),
+                        frameBuffer.all().map { it.snap.ox to it.snap.oz },
+                        wallSegs.toList()
+                    )?.vertices?.map { Pt(it[0].toDouble(), it[1].toDouble()) }
+                    livePolygon = poly
+                    if (poly != null) {
+                        val frames = frameBuffer.all()
+                        liveFrames = frames.map {
+                            Triple(it.snap.ox.toDouble(), it.snap.oz.toDouble(), ObjectLocalizer.cameraForwardHeading(it.snap))
+                        }
+                        coveragePct = ScanCoverage.coveragePct(liveFrames, poly, 3.0)
                     }
-                    coveragePct = ScanCoverage.coveragePct(liveFrames, poly, 3.0)
+                } catch (e: Exception) {
+                    Log.w(TAG, "小地图重算异常: ${e.message}")
                 }
             }
             kotlinx.coroutines.delay(1000)  // 小地图 1s 刷新（原 2.5s）
