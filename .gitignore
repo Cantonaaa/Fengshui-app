@@ -69,3 +69,15 @@ scripts/test_imgs/
 scripts/debug*
 scripts/pnnx/
 app/app/src/main/assets/yolo_world.bin
+# m 模型中间产物（与 l 同策略，不入库；保留导出/手术/验证源码）
+scripts/yolov8m-worldv2.pt
+scripts/yolov8m-worldv2.torchscript
+scripts/yolov8m-worldv2.onnx
+scripts/yolov8m-worldv2.pnnx.*
+scripts/yolov8m-worldv2.ncnn.*
+scripts/yolov8m-worldv2_pnnx.py
+scripts/yolov8m-worldv2_ncnn.py
+scripts/yolov8m-worldv2_patchedH*
+scripts/yolov8m_world_v2_960.onnx
+scripts/yolov8m_world_v2_960.pt
+scripts/backup/

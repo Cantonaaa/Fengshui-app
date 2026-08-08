@@ -1,5 +1,6 @@
 package com.fengshui.app
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 
 /**
@@ -29,31 +30,49 @@ object PostScanProcessor {
     ): List<ScanObject> {
         val raws = ArrayList<RawDet>()
         frames.forEachIndexed { i, fr ->
-            val bmp = BitmapFactory.decodeByteArray(fr.jpeg, 0, fr.jpeg.size)
+            val bmp = decodeCapped(fr.jpeg)
             if (bmp != null) {
-                // 基础置信放低到 0.15 让 JNI 放行低分框，再按类别分档过滤：
-                // 衣柜 0.20 / 门窗 0.25 / 其余 0.35（嵌入式低对比物召回更好，多帧融合兜底误检）
-                val dets = detector.detect(bmp, confThr = 0.15f).filter { accept(it) }
-                for (d in dets) {
-                    if (d.cls == "未识别") continue   // 未辨不入器物
-                    val pos = ObjectLocalizer.projectToFloor(fr.snap, d.cx, d.bottom, fr.floorH) ?: continue
-                    val dist = Math.hypot(
-                        pos[0].toDouble() - fr.snap.ox.toDouble(),
-                        pos[2].toDouble() - fr.snap.oz.toDouble()
-                    )
-                    val (w, h) = SizeEstimator.estimate(
-                        d.right - d.left, d.bottom - d.top, fr.snap.fx, fr.snap.fy, dist
-                    )
-                    // A2 高度一致性：只框到局部/异常合并框过滤，防位置与尺寸污染
-                    if (!heightConsistent(h, d.cls)) continue
-                    val (ddx, ddz) = FactsBuilder.defaultDims(d.cls)
-                    raws.add(RawDet(d.cls, d.score, pos[0].toDouble(), pos[2].toDouble(),
-                        SizeEstimator.footprintWidth(w, ddx), ddz))
+                try {
+                    // 基础置信放低到 0.15 让 JNI 放行低分框，再按类别分档过滤：
+                    // 衣柜 0.20 / 门窗 0.25 / 其余 0.35（嵌入式低对比物召回更好，多帧融合兜底误检）
+                    val dets = detector.detect(bmp, confThr = 0.15f).filter { accept(it) }
+                    for (d in dets) {
+                        if (d.cls == "未识别") continue   // 未辨不入器物
+                        val pos = ObjectLocalizer.projectToFloor(fr.snap, d.cx, d.bottom, fr.floorH) ?: continue
+                        val dist = Math.hypot(
+                            pos[0].toDouble() - fr.snap.ox.toDouble(),
+                            pos[2].toDouble() - fr.snap.oz.toDouble()
+                        )
+                        val (w, h) = SizeEstimator.estimate(
+                            d.right - d.left, d.bottom - d.top, fr.snap.fx, fr.snap.fy, dist
+                        )
+                        // A2 高度一致性：只框到局部/异常合并框过滤，防位置与尺寸污染
+                        if (!heightConsistent(h, d.cls)) continue
+                        val (ddx, ddz) = FactsBuilder.defaultDims(d.cls)
+                        raws.add(RawDet(d.cls, d.score, pos[0].toDouble(), pos[2].toDouble(),
+                            SizeEstimator.footprintWidth(w, ddx), ddz))
+                    }
+                } finally {
+                    bmp.recycle()   // 及时回收，防 l@960 推理+大位图 OOM
                 }
             }
             onProgress(i + 1, frames.size)
         }
         return canonicalizeScan(fuse(raws))
+    }
+
+    /** 限幅解码：长边 ≤ maxSide（默认 1280），降低位图内存；JNI 仍缩放到模型输入。 */
+    private fun decodeCapped(jpeg: ByteArray, maxSide: Int = 1280): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, bounds)
+        var sample = 1
+        val w = bounds.outWidth; val h = bounds.outHeight
+        if (w > 0 && h > 0) {
+            val longSide = maxOf(w, h)
+            while (longSide / sample > maxSide) sample *= 2
+        }
+        val opt = BitmapFactory.Options().apply { inSampleSize = sample }
+        return BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, opt)
     }
 
     /** 按类别分档置信阈值（嵌入式/低对比物放低门槛）。 */

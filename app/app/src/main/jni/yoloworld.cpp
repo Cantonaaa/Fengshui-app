@@ -10,8 +10,14 @@
 
 static ncnn::Net g_net;
 static bool g_loaded = false;
-// 模型输入尺寸：yolov8l-worldv2 @ 960（后处理离线批量，时间充裕，取高分辨率提精度）
+// 模型输入尺寸：yolov8l-worldv2 @ 960（分组卷积修复后恢复 960 全精度）
 static const int TARGET = 960;
+
+// 库加载即设置 OpenMP 栈（早于任何 OpenMP 初始化，避免 l@960 推理时 worker 线程栈溢出）
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+    setenv("OMP_STACKSIZE", "256M", 1);
+    return JNI_VERSION_1_6;
+}
 
 struct Object {
     int cls;
@@ -159,10 +165,12 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeLoadModel(
     const char* b = env->GetStringUTFChars(binPath, 0);
 
     g_net.opt.use_vulkan_compute = false;
-    g_net.opt.use_fp16_storage = false;      // 保持 fp32，与验证数值一致
-    g_net.opt.use_fp16_arithmetic = false;
-    g_net.opt.num_threads = 4;               // 已去除 Einsum，多线程安全
-    setenv("OMP_STACKSIZE", "128M", 1);      // 加大 OpenMP 栈
+    g_net.opt.use_fp16_storage = true;       // fp16 存储：切换 ARM 卷积内核路径，规避 fp32 内核越界（精度 ~0.1-0.5%）
+    g_net.opt.use_fp16_arithmetic = false;   // 算术仍 fp32，累积精度不降
+    g_net.opt.use_packing_layout = false;    // 关通道打包（防御性）
+    g_net.opt.use_winograd_convolution = false;  // 关 Winograd：规避 l 模型 3x3 卷积 Winograd 内核在真机的越界崩溃（社区 #5653 同帧）
+    g_net.opt.num_threads = 1;               // 单线程：进一步降低并发不确定性
+    setenv("OMP_STACKSIZE", "256M", 1);      // 加大 OpenMP 栈（JNI_OnLoad 已提前设置）
 
     int r1 = g_net.load_param(p);
     int r2 = g_net.load_model(b);
