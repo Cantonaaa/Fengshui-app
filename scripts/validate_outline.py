@@ -320,7 +320,19 @@ def ransac_lines_2d(xz, thr=0.15, min_inl=20, max_lines=6, seed=1):
         if best is None:
             break
         nx, nz, d, cnt, ang = best
-        lines.append(best)
+        # D 精修：内点最小二乘主成分方向（借鉴 Deep3D）
+        dist = np.abs(remaining @ np.array([nx, nz]) + d)
+        inl = remaining[dist < thr]
+        if len(inl) >= 2:
+            cx, cz = inl.mean(0)
+            q = inl - inl.mean(0)
+            ang2 = 0.5 * np.arctan2(2 * (q[:, 0] * q[:, 1]).sum(), (q[:, 0] ** 2 - q[:, 1] ** 2).sum())
+            dx2, dz2 = np.cos(ang2), np.sin(ang2)
+            n2x, n2z = -dz2, dx2
+            d2 = -(n2x * cx + n2z * cz)
+            nx, nz, d, cnt = n2x, n2z, d2, len(inl)
+            ang = np.degrees(ang2)
+        lines.append((nx, nz, d, cnt, ang))
         dist = np.abs(remaining @ np.array([nx, nz]) + d)
         remaining = remaining[dist >= thr]
     return lines
@@ -408,6 +420,22 @@ def orthogonalize(poly, axis):
     return np.array([[p[0] * c2 - p[1] * s2, p[0] * s2 + p[1] * c2] for p in out])
 
 
+def remove_spikes(poly, min_len=0.3):
+    """C: 毛刺去除——相邻两边都过短的顶点删掉。"""
+    poly = list(poly)
+    n = len(poly)
+    if n < 4:
+        return np.array(poly)
+    out = []
+    for i in range(n):
+        a = poly[(i - 1) % n]; b = poly[i]; c = poly[(i + 1) % n]
+        e1 = np.hypot(b[0] - a[0], b[1] - a[1]); e2 = np.hypot(c[0] - b[0], c[1] - b[1])
+        if e1 < min_len and e2 < min_len:
+            continue
+        out.append(b)
+    return np.array(out) if len(out) >= 3 else np.array(poly)
+
+
 def proposed_outline_v2(C, track):
     """改进 v2：grid 基础 + D(墙线 RANSAC) + B(正交化) + C(DP 简化)。墙证据=墙带点+墙段。"""
     # 基础 grid 轮廓（复用 proposed_outline 逻辑，但返回网格轮廓供后处理）
@@ -437,7 +465,7 @@ def proposed_outline_v2(C, track):
         orth = orthogonalize(poly, axis)
         if orth is not None:
             poly = orth
-    poly = simplify_dp(poly, 0.25)
+    poly = remove_spikes(simplify_dp(poly, 0.25), 0.3)
     inside = sum(1 for t in track if point_in_poly(t, poly))
     if inside < max(3, len(track) * 0.5):
         m2 = 0.4

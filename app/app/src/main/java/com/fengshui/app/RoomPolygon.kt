@@ -320,8 +320,23 @@ object RoomPolygon {
                 }
             }
             val bl = best ?: return@repeat
-            lines.add(bl)
-            remaining = remaining.filter { abs(bl.nx * it[0] + bl.nz * it[1] + bl.d) >= thr }.toMutableList()
+            // D 精修（借鉴 Deep3D-FloorPlan-Net）：内点最小二乘主成分方向 → 更准墙线
+            val inl = remaining.filter { abs(bl.nx * it[0] + bl.nz * it[1] + bl.d) < thr }
+            if (inl.size >= 2) {
+                var cx = 0f; var cz = 0f
+                for (p in inl) { cx += p[0]; cz += p[1] }
+                cx /= inl.size; cz /= inl.size
+                var sxx = 0f; var sxy = 0f; var syy = 0f
+                for (p in inl) { val dx = p[0] - cx; val dz = p[1] - cz; sxx += dx * dx; sxy += dx * dz; syy += dz * dz }
+                val ang2 = (0.5 * Math.atan2(2.0 * sxy.toDouble(), (sxx - syy).toDouble())).toFloat()
+                val dirx = Math.cos(ang2.toDouble()).toFloat(); val dirz = Math.sin(ang2.toDouble()).toFloat()
+                val n2x = -dirz; val n2z = dirx
+                val d2 = -(n2x * cx + n2z * cz)
+                lines.add(WallLine(n2x, n2z, d2, inl.size, Math.toDegrees(ang2.toDouble()).toFloat()))
+            } else {
+                lines.add(bl)
+            }
+            remaining = remaining.filter { abs(lines.last().nx * it[0] + lines.last().nz * it[1] + lines.last().d) >= thr }.toMutableList()
         }
         return lines
     }
@@ -399,6 +414,21 @@ object RoomPolygon {
         return simplifyCollinear(dedupeConsecutive(out))
     }
 
+    /** C: 毛刺/短枝去除——相邻两边都过短的顶点删掉（借鉴 RRCE_2D 鲁棒轮廓的去噪思想）。 */
+    private fun removeSpikes(poly: List<FloatArray>, minLen: Float): List<FloatArray> {
+        val n = poly.size
+        if (n < 4) return poly
+        val out = ArrayList<FloatArray>(n)
+        for (i in 0 until n) {
+            val a = poly[(i - 1 + n) % n]; val b = poly[i]; val c = poly[(i + 1) % n]
+            val e1 = hypot(b[0] - a[0], b[1] - a[1])
+            val e2 = hypot(c[0] - b[0], c[1] - b[1])
+            if (e1 < minLen && e2 < minLen) continue
+            out.add(b)
+        }
+        return if (out.size < 3) poly else simplifyCollinear(dedupeConsecutive(out))
+    }
+
     /**
      * 改进算法（含 A/B/C/D）：全点密度网格 + ARCore 竖墙证据注入 + 形态学闭合 + 最大分量 + 外轮廓；
      * D 墙线 RANSAC → B 主方向正交化(置信门控) → C DP 简化；下界轨迹含入。
@@ -449,13 +479,13 @@ object RoomPolygon {
         val lines = ransacWallLines(wallSrc)
         val axis = if (lines.size >= 2) dominantAxis(lines) else null
 
-        // B: 正交化（置信门控）+ C: DP 简化
+        // B: 正交化（置信门控）+ C: DP 简化 + 毛刺去除
         var finalPoly = outline
         if (axis != null) {
             val ortho = orthogonalizeOutline(outline, axis)
             if (ortho != null) finalPoly = ortho
         }
-        finalPoly = simplifyDP(finalPoly, 0.25f)
+        finalPoly = removeSpikes(simplifyDP(finalPoly, 0.25f), 0.3f)
 
         // 下界：轨迹含入
         val inside = track.count { pointInPoly(floatArrayOf(it.first, it.second), finalPoly) }
