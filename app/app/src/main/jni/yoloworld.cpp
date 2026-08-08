@@ -167,9 +167,9 @@ Java_com_fengshui_app_YOLOWorldNcnn_nativeLoadModel(
     g_net.opt.use_vulkan_compute = false;
     g_net.opt.use_fp16_storage = true;       // fp16 存储：切换 ARM 卷积内核路径，规避 fp32 内核越界（精度 ~0.1-0.5%）
     g_net.opt.use_fp16_arithmetic = false;   // 算术仍 fp32，累积精度不降
-    g_net.opt.use_packing_layout = false;    // 关通道打包（防御性）
+    g_net.opt.use_packing_layout = true;     // B1: 开通道打包（纯布局，不改数值，m 结构已稳定）
     g_net.opt.use_winograd_convolution = false;  // 关 Winograd：规避 l 模型 3x3 卷积 Winograd 内核在真机的越界崩溃（社区 #5653 同帧）
-    g_net.opt.num_threads = 1;               // 单线程：进一步降低并发不确定性
+    g_net.opt.num_threads = 4;               // B1: 多线程推理（崩溃根因是 l 的 512ch backbone，非并发；m 384ch 已单线程稳定）
     setenv("OMP_STACKSIZE", "256M", 1);      // 加大 OpenMP 栈（JNI_OnLoad 已提前设置）
 
     int r1 = g_net.load_param(p);

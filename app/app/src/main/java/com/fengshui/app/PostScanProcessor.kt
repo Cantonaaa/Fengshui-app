@@ -9,6 +9,8 @@ import android.graphics.BitmapFactory
  */
 object PostScanProcessor {
 
+    private const val TAG = "PostScanP0"
+
     /** 单帧检测原始记录。 */
     private data class RawDet(
         val cls: String,
@@ -29,14 +31,36 @@ object PostScanProcessor {
         onProgress: (Int, Int) -> Unit
     ): List<ScanObject> {
         val raws = ArrayList<RawDet>()
+        // P0 诊断：统计每帧检测分数的分布，用于校准阈值（m@960 的 17 类分数系统性偏低）
+        var maxScore = 0f
+        val cnt = IntArray(4)  // ≥0.05 / ≥0.10 / ≥0.20 / ≥0.35
+        // B3: 后台预解码下一帧，与当前帧推理重叠（解码 ~30ms ≪ 推理 ~5s）
+        val decoder = java.util.concurrent.Executors.newSingleThreadExecutor()
+        val pending = java.util.concurrent.ArrayBlockingQueue<Bitmap?>(1)
+        fun prefetch(idx: Int) {
+            decoder.execute {
+                val b = if (idx < frames.size) decodeCapped(frames[idx].jpeg) else null
+                try { pending.put(b) } catch (e: InterruptedException) { b?.recycle() }
+            }
+        }
+        prefetch(0)
         frames.forEachIndexed { i, fr ->
-            val bmp = decodeCapped(fr.jpeg)
+            val bmp = pending.take()
+            if (i + 1 < frames.size) prefetch(i + 1)
             if (bmp != null) {
                 try {
-                    // 基础置信放低到 0.15 让 JNI 放行低分框，再按类别分档过滤：
-                    // 衣柜 0.20 / 门窗 0.25 / 其余 0.35（嵌入式低对比物召回更好，多帧融合兜底误检）
-                    val dets = detector.detect(bmp, confThr = 0.15f).filter { accept(it) }
+                    // P0：conf/margin 下探——17 类模型分数低，margin 0.15 会几乎全判"未识别"
+                    // conf 0.05 放行低分框，真实过滤交给多帧分数聚合（fuse）
+                    val dets = detector.detect(bmp, confThr = 0.05f, marginThr = 0.01f)
                     for (d in dets) {
+                        if (d.score > maxScore) maxScore = d.score
+                        when {
+                            d.score >= 0.35f -> cnt[3]++
+                            d.score >= 0.20f -> cnt[2]++
+                            d.score >= 0.10f -> cnt[1]++
+                            d.score >= 0.05f -> cnt[0]++
+                        }
+                        if (!accept(d)) continue
                         if (d.cls == "未识别") continue   // 未辨不入器物
                         val pos = ObjectLocalizer.projectToFloor(fr.snap, d.cx, d.bottom, fr.floorH) ?: continue
                         val dist = Math.hypot(
@@ -58,6 +82,9 @@ object PostScanProcessor {
             }
             onProgress(i + 1, frames.size)
         }
+        decoder.shutdownNow()
+        android.util.Log.i(TAG, "P0诊断: frames=${frames.size} maxScore=%.4f".format(maxScore) +
+            " ≥0.05=${cnt[0]} ≥0.10=${cnt[1]} ≥0.20=${cnt[2]} ≥0.35=${cnt[3]} raws=${raws.size}")
         return canonicalizeScan(fuse(raws))
     }
 
@@ -75,15 +102,9 @@ object PostScanProcessor {
         return BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, opt)
     }
 
-    /** 按类别分档置信阈值（嵌入式/低对比物放低门槛）。 */
+    /** P0：低门槛（仅底层放行），真实过滤交给多帧分数聚合；分数分布校准后再精调。 */
     private fun accept(d: YOLOWorldNcnn.Detection): Boolean {
-        val min = when (d.cls) {
-            "wardrobe" -> 0.20f
-            "door", "window" -> 0.25f
-            "book" -> 0.30f   // 书为小物，放宽（作书柜验证器）
-            else -> 0.35f
-        }
-        return d.score >= min
+        return d.score >= 0.05f
     }
 
     /**
@@ -112,7 +133,16 @@ object PostScanProcessor {
             val ofType = raws.filter { it.cls == type }
             val clusters = greedyCluster(ofType, 2.5)
             for (cl in clusters) {
-                if (cl.size < 2 && !(cl.size == 1 && cl[0].score >= 0.6f)) continue
+                // P0：分数聚合——多帧弱分目标靠"分数和"确认；单帧需高置信直收
+                val sum = cl.fold(0f) { acc, r -> acc + r.score }
+                val clMax = cl.maxOf { it.score }
+                val keep = when {
+                    cl.size >= 2 && sum >= 0.12f -> true
+                    cl.size == 1 && clMax >= 0.45f -> true
+                    else -> false
+                }
+                if (!keep) continue
+                android.util.Log.i(TAG, "P0融合: $type 帧数=${cl.size} 分和=%.3f max=%.3f".format(sum, clMax))
                 val xs = cl.map { it.x }.sorted()
                 val zs = cl.map { it.z }.sorted()
                 result.add(ScanObject(

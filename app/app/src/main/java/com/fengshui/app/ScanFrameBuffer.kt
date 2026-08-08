@@ -22,6 +22,9 @@ class ScanFrameBuffer {
     private val frames = ArrayList<FrameRec>()
     private var lastPose: ObjectLocalizer.CameraSnapshot? = null
 
+    /** B4: 帧缓冲上限（~40MB JPEG），超限 FIFO 淘汰最旧帧，防超长扫描 OOM。 */
+    private val MAX_FRAMES = 100
+
     /** 累计航向（用于自动检测"环绕一周"）。 */
     var cumulativeYaw: Float = 0f
         private set
@@ -45,6 +48,7 @@ class ScanFrameBuffer {
         if (bmp != null) {
             val bos = java.io.ByteArrayOutputStream()
             bmp.compress(Bitmap.CompressFormat.JPEG, 80, bos)
+            if (frames.size >= MAX_FRAMES) frames.removeAt(0)  // B4: FIFO 淘汰最旧帧
             frames.add(FrameRec(bos.toByteArray(), snap, floorH))
         }
         lastPose = snap
